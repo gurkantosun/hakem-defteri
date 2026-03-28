@@ -6,207 +6,234 @@
 <title>Hakem Gelişim Defteri</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0a0c10;--surface:#111318;--surface2:#1a1d24;--surface3:#22262f;--border:#2a2f3a;--accent:#f5a623;--accent3:#3db8a0;--text:#e8eaf0;--text2:#8a909e;--text3:#555c6e;--good:#3db8a0;--bad:#e8391d;--warn:#f5a623;}
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(245,166,35,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(61,184,160,.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
-  body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(245,166,35,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(245,166,35,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
-  header{position:relative;z-index:10;padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-  .logo{display:flex;align-items:baseline;gap:9px;}
-  .logo-ball{font-size:22px;filter:drop-shadow(0 0 12px rgba(245,166,35,.5));animation:bounce 2.4s ease-in-out infinite;}
-  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
-  .logo-text{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--accent);}
-  .logo-sub{font-size:9px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;}
-  .header-stats{display:flex;gap:16px;flex-wrap:wrap;}
-  .hstat{text-align:center;}
-  .hstat-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);line-height:1;}
-  .hstat-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:1px;}
-  nav{position:relative;z-index:10;display:flex;gap:2px;padding:7px 20px 0;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
-  nav::-webkit-scrollbar{display:none;}
-  .nav-btn{background:none;border:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--text3);padding:7px 11px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;}
-  .nav-btn:hover{color:var(--text2);}
-  .nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
-  main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:20px 16px 60px;}
-  .panel{display:none;animation:fadeIn .3s ease;}
-  .panel.active{display:block;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-  .section-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
-  .section-title::after{content:'';flex:1;height:1px;background:var(--border);margin-left:7px;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;transition:border-color .2s;}
-  .card:hover{border-color:var(--surface3);}
-  .card-accent{border-left:3px solid var(--accent);padding-left:11px;}
-  .card-future{border-left:3px solid var(--accent3);background:rgba(61,184,160,.03);}
-  label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;}
-  input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:9px;resize:vertical;}
-  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,166,35,.1);}
-  select option{background:var(--surface2);}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-  .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
-  @media(max-width:560px){.form-row,.form-row3{grid-template-columns:1fr;}}
-  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
-  .btn-primary{background:var(--accent);color:#000;}
-  .btn-primary:hover{background:#f7b93e;transform:translateY(-1px);box-shadow:0 4px 14px rgba(245,166,35,.3);}
-  .btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
-  .btn-ghost:hover{background:var(--surface3);color:var(--text);}
-  .btn-teal{background:rgba(61,184,160,.15);color:var(--accent3);border:1px solid rgba(61,184,160,.3);}
-  .btn-teal:hover{background:rgba(61,184,160,.25);}
-  .btn-danger{background:rgba(232,57,29,.15);color:var(--bad);border:1px solid rgba(232,57,29,.3);}
-  .btn-danger:hover{background:rgba(232,57,29,.25);}
-  .btn-sm{padding:4px 8px;font-size:10px;}
+:root{--bg:#0a0c10;--surface:#111318;--surface2:#1a1d24;--surface3:#22262f;--border:#2a2f3a;--accent:#f5a623;--accent3:#3db8a0;--text:#e8eaf0;--text2:#8a909e;--text3:#555c6e;--good:#3db8a0;--bad:#e8391d;--warn:#f5a623;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(245,166,35,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(61,184,160,.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(245,166,35,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(245,166,35,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
 
-  /* Match type toggle */
-  .type-toggle{display:flex;gap:6px;margin-bottom:9px;}
-  .type-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text3);transition:all .15s;text-align:center;}
-  .type-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.08);}
+header{position:relative;z-index:10;padding:14px 18px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.logo{display:flex;align-items:baseline;gap:8px;}
+.logo-ball{font-size:20px;filter:drop-shadow(0 0 10px rgba(245,166,35,.5));animation:bounce 2.4s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--accent);}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;}
+.header-stats{display:flex;gap:14px;flex-wrap:wrap;}
+.hstat{text-align:center;}
+.hstat-val{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--accent);line-height:1;}
+.hstat-lbl{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:1px;}
 
-  /* Category grid */
-  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:9px;}
-  .cat-btn{padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);transition:all .15s;text-align:center;}
-  .cat-btn:hover{border-color:var(--accent3);color:var(--text2);}
-  .cat-btn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(61,184,160,.08);}
+nav{position:relative;z-index:10;display:flex;gap:1px;padding:6px 18px 0;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+nav::-webkit-scrollbar{display:none;}
+.nav-btn{background:none;border:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--text3);padding:6px 10px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;}
+.nav-btn:hover{color:var(--text2);}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
 
-  /* Match cards */
-  .match-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;cursor:pointer;transition:all .2s;}
-  .match-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateX(2px);}
-  .match-card.future-card{border-color:rgba(61,184,160,.3);}
-  .match-card.future-card:hover{border-color:var(--accent3);}
-  .match-date-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;text-align:center;min-width:44px;}
-  .match-date-badge.future-badge{border-color:rgba(61,184,160,.3);}
-  .match-date-day{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--accent);line-height:1;}
-  .match-date-badge.future-badge .match-date-day{color:var(--accent3);}
-  .match-date-mon{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
-  .match-info h3{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
-  .match-meta{font-size:11px;color:var(--text3);display:flex;gap:7px;flex-wrap:wrap;}
-  .rating-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;border:2px solid;}
-  .rating-good{border-color:var(--good);color:var(--good);background:rgba(61,184,160,.1);}
-  .rating-ok{border-color:var(--warn);color:var(--warn);background:rgba(245,166,35,.1);}
-  .rating-bad{border-color:var(--bad);color:var(--bad);background:rgba(232,57,29,.1);}
-  .future-badge-pill{background:rgba(61,184,160,.15);color:var(--accent3);border:1px solid rgba(61,184,160,.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;}
-  .stars{display:flex;gap:3px;margin-bottom:9px;}
-  .star{font-size:19px;cursor:pointer;transition:transform .1s;filter:grayscale(1) brightness(.4);}
-  .star.active{filter:none;transform:scale(1.1);}
-  .star:hover{transform:scale(1.15);}
-  .error-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;}
-  .error-tag{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;user-select:none;}
-  .error-tag.selected{background:rgba(232,57,29,.2)!important;border-color:var(--bad)!important;color:var(--bad)!important;}
-  .error-tag:not(.selected){background:var(--surface2);border-color:var(--border);color:var(--text3);}
-  .error-tag:not(.selected):hover{border-color:var(--text3);color:var(--text2);}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px;}
-  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;text-align:center;}
-  .stat-box-val{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;margin-bottom:3px;}
-  .stat-box-lbl{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;}
-  .progress-row{margin-bottom:8px;}
-  .progress-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
-  .progress-label span:first-child{color:var(--text2);}
-  .progress-label span:last-child{color:var(--accent);font-weight:600;}
-  .progress-track{background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;}
-  .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#f7b93e);transition:width .8s cubic-bezier(.4,0,.2,1);}
-  .timeline{position:relative;padding-left:18px;}
-  .timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:1px;background:var(--border);}
-  .timeline-item{position:relative;margin-bottom:14px;}
-  .timeline-dot{position:absolute;left:-16px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
-  .timeline-date{font-size:10px;color:var(--text3);margin-bottom:2px;}
-  .timeline-content{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.5;border-left:2px solid var(--surface3);}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s;}
-  .modal-overlay.open{opacity:1;pointer-events:all;}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:660px;width:100%;max-height:90vh;overflow-y:auto;transform:translateY(16px);transition:transform .25s;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-  .modal-overlay.open .modal{transform:translateY(0);}
-  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-  .modal-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;color:var(--accent);}
-  .modal-close{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text3);width:25px;height:25px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all .15s;}
-  .modal-close:hover{color:var(--text);border-color:var(--text3);}
-  #toast{position:fixed;bottom:16px;right:16px;background:var(--surface3);border:1px solid var(--accent);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--text);z-index:200;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
-  #toast.show{transform:translateY(0);opacity:1;}
-  .empty-state{text-align:center;padding:32px 16px;color:var(--text3);}
-  .empty-state .empty-icon{font-size:38px;margin-bottom:8px;opacity:.5;}
-  .empty-state p{font-size:12px;line-height:1.6;}
-  .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
-  .chart-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:11px;}
-  canvas{width:100%!important;}
-  .goal-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:5px;display:flex;align-items:center;gap:8px;transition:all .2s;}
-  .goal-item.done{opacity:.5;}
-  .goal-checkbox{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;font-size:10px;}
-  .goal-item.done .goal-checkbox{background:var(--good);border-color:var(--good);}
-  .goal-text{flex:1;font-size:12px;color:var(--text2);}
-  .goal-item.done .goal-text{text-decoration:line-through;color:var(--text3);}
-  .note-block{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;border-left:2px solid var(--accent3);}
-  .error-list-item{display:flex;align-items:flex-start;gap:6px;background:rgba(232,57,29,.06);border:1px solid rgba(232,57,29,.15);border-radius:8px;padding:6px 9px;margin-bottom:4px;font-size:11px;color:var(--text2);line-height:1.5;}
-  .error-list-item::before{content:'⚠';color:var(--bad);flex-shrink:0;font-size:10px;margin-top:1px;}
-  .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;}
-  .badge-league{background:rgba(245,166,35,.15);color:var(--accent);}
-  .badge-role{background:rgba(138,144,158,.15);color:var(--text2);}
-  .badge-type{background:rgba(61,184,160,.15);color:var(--accent3);}
-  .badge-okul{background:rgba(61,184,160,.15);color:var(--accent3);}
-  .badge-bolge{background:rgba(245,166,35,.15);color:var(--accent);}
-  hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
-  ::-webkit-scrollbar{width:4px;height:4px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+main{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:18px 14px 60px;}
+.panel{display:none;animation:fadeIn .3s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-  /* CALENDAR */
-  .calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .cal-nav{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:4px 11px;cursor:pointer;font-size:15px;transition:all .15s;}
-  .cal-nav:hover{border-color:var(--accent);color:var(--accent);}
-  .cal-month-label{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--text);}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-  .cal-day-name{text-align:center;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:5px 0;}
-  .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:7px;min-height:58px;padding:4px 5px;transition:all .15s;cursor:default;}
-  .cal-cell.has-match{border-color:rgba(245,166,35,.4);cursor:pointer;}
-  .cal-cell.has-match:hover{border-color:var(--accent);background:var(--surface2);}
-  .cal-cell.has-future{border-color:rgba(61,184,160,.4);cursor:pointer;}
-  .cal-cell.has-future:hover{border-color:var(--accent3);background:rgba(61,184,160,.03);}
-  .cal-cell.today{border-color:rgba(245,166,35,.6);}
-  .cal-cell.empty{background:transparent;border-color:transparent;}
-  .cal-date-num{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:2px;}
-  .cal-cell.today .cal-date-num{color:var(--accent);}
-  .cal-dot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;font-size:9px;font-weight:700;margin:1px 1px;line-height:1;}
-  .cal-dot-future{border:1px solid var(--accent3);color:var(--accent3);font-size:8px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:6px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);margin-left:6px;}
 
-  /* QUIZ */
-  .quiz-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;transition:all .2s;cursor:pointer;}
-  .quiz-upload-zone:hover,.quiz-upload-zone.drag-over{border-color:var(--accent);background:rgba(245,166,35,.04);}
-  .quiz-upload-zone p{color:var(--text3);font-size:12px;margin-top:6px;}
-  #pdf-file-input{display:none;}
-  .quiz-controls{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;}
-  .quiz-difficulty{display:flex;gap:4px;}
-  .diff-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text3);padding:4px 11px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
-  .diff-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.08);}
-  .quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:10px;}
-  .quiz-progress-bar{background:var(--surface2);border-radius:4px;height:4px;margin-bottom:16px;overflow:hidden;}
-  .quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#f7b93e);transition:width .4s ease;border-radius:4px;}
-  .quiz-q-num{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
-  .quiz-question{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:14px;}
-  .quiz-options{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
-  .quiz-option{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;text-align:left;}
-  .quiz-option:hover:not(.answered){border-color:var(--accent);color:var(--text);background:rgba(245,166,35,.05);}
-  .quiz-option.correct{border-color:var(--good);background:rgba(61,184,160,.12);color:var(--good);}
-  .quiz-option.wrong{border-color:var(--bad);background:rgba(232,57,29,.12);color:var(--bad);}
-  .quiz-option.answered{cursor:default;}
-  .quiz-explanation{background:var(--surface2);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--text2);line-height:1.6;border-left:2px solid var(--accent3);margin-bottom:9px;}
-  .quiz-tf-btns{display:flex;gap:8px;margin-bottom:11px;}
-  .quiz-tf-btn{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;transition:all .15s;color:var(--text2);}
-  .quiz-tf-btn:hover:not(.answered){border-color:var(--accent);color:var(--accent);}
-  .quiz-tf-btn.correct{border-color:var(--good);background:rgba(61,184,160,.15);color:var(--good);}
-  .quiz-tf-btn.wrong{border-color:var(--bad);background:rgba(232,57,29,.15);color:var(--bad);}
-  .quiz-tf-btn.answered{cursor:default;}
-  .quiz-score-box{text-align:center;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:14px;}
-  .quiz-score-val{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--accent);line-height:1;}
-  .quiz-stats-row{display:flex;justify-content:center;gap:20px;margin:12px 0;}
-  .quiz-stat{text-align:center;}
-  .quiz-stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;}
-  .quiz-stat-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
-  .quiz-generating{text-align:center;padding:32px 16px;}
-  .quiz-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .quiz-generating p{color:var(--text2);font-size:12px;}
-  .api-key-section{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:11px;}
-  .api-note{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.5;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;margin-bottom:9px;transition:border-color .2s;}
+.card-accent{border-left:3px solid var(--accent);padding-left:10px;}
+.card-future{background:rgba(61,184,160,.03);border-color:rgba(61,184,160,.25);}
 
-  /* Upcoming notice */
-  .upcoming-notice{background:rgba(61,184,160,.06);border:1px solid rgba(61,184,160,.25);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:9px;}
-  .upcoming-notice .un-icon{font-size:20px;flex-shrink:0;}
-  .upcoming-notice .un-text{flex:1;font-size:12px;color:var(--accent3);line-height:1.4;}
-  .upcoming-notice .un-days{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent3);flex-shrink:0;}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:4px;}
+input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:8px;resize:vertical;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,166,35,.1);}
+select option{background:var(--surface2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.form-row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+@media(max-width:560px){.form-row,.form-row3,.form-row4{grid-template-columns:1fr 1fr;}}
+@media(max-width:380px){.form-row,.form-row3,.form-row4{grid-template-columns:1fr;}}
+
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 13px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#f7b93e;transform:translateY(-1px);box-shadow:0 4px 12px rgba(245,166,35,.3);}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface3);color:var(--text);}
+.btn-teal{background:rgba(61,184,160,.12);color:var(--accent3);border:1px solid rgba(61,184,160,.3);}
+.btn-teal:hover{background:rgba(61,184,160,.22);}
+.btn-warn{background:rgba(245,166,35,.12);color:var(--warn);border:1px solid rgba(245,166,35,.3);}
+.btn-warn:hover{background:rgba(245,166,35,.22);}
+.btn-danger{background:rgba(232,57,29,.12);color:var(--bad);border:1px solid rgba(232,57,29,.3);}
+.btn-danger:hover{background:rgba(232,57,29,.22);}
+.btn-sm{padding:4px 7px;font-size:10px;}
+
+/* Toggles */
+.type-toggle{display:flex;gap:5px;margin-bottom:8px;}
+.type-btn{flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--text3);transition:all .15s;text-align:center;}
+.type-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.08);}
+
+/* Category grid */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:5px;margin-bottom:8px;}
+.cat-btn{padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);transition:all .15s;text-align:center;}
+.cat-btn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(61,184,160,.08);}
+
+/* Match cards */
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:9px 13px;margin-bottom:5px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;cursor:pointer;transition:all .2s;}
+.match-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateX(2px);}
+.match-card.future-card{border-color:rgba(61,184,160,.3);}
+.match-card.future-card:hover{border-color:var(--accent3);}
+.match-date-badge{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:4px 7px;text-align:center;min-width:42px;}
+.future-badge-date{border-color:rgba(61,184,160,.3);}
+.match-date-day{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--accent);line-height:1;}
+.future-badge-date .match-date-day{color:var(--accent3);}
+.match-date-mon{font-size:8px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+.match-info h3{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.match-meta{font-size:10px;color:var(--text3);display:flex;gap:6px;flex-wrap:wrap;}
+.rating-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;border:2px solid;}
+.rating-good{border-color:var(--good);color:var(--good);background:rgba(61,184,160,.1);}
+.rating-ok{border-color:var(--warn);color:var(--warn);background:rgba(245,166,35,.1);}
+.rating-bad{border-color:var(--bad);color:var(--bad);background:rgba(232,57,29,.1);}
+.future-pill{background:rgba(61,184,160,.12);color:var(--accent3);border:1px solid rgba(61,184,160,.25);border-radius:20px;padding:1px 6px;font-size:9px;font-weight:600;}
+
+/* Stars */
+.stars{display:flex;gap:2px;margin-bottom:8px;}
+.star{font-size:18px;cursor:pointer;transition:transform .1s;filter:grayscale(1) brightness(.4);}
+.star.active{filter:none;transform:scale(1.1);}
+.star:hover{transform:scale(1.15);}
+
+/* Error tags */
+.error-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.error-tag{padding:2px 7px;border-radius:5px;font-size:10px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;user-select:none;}
+.error-tag.selected{background:rgba(232,57,29,.18)!important;border-color:var(--bad)!important;color:var(--bad)!important;}
+.error-tag:not(.selected){background:var(--surface2);border-color:var(--border);color:var(--text3);}
+.error-tag:not(.selected):hover{border-color:var(--text3);color:var(--text2);}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:7px;margin-bottom:14px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;}
+.stat-box-val{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;margin-bottom:2px;}
+.stat-box-lbl{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;}
+
+/* Progress */
+.progress-row{margin-bottom:7px;}
+.progress-label{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;}
+.progress-label span:first-child{color:var(--text2);}
+.progress-label span:last-child{color:var(--accent);font-weight:600;}
+.progress-track{background:var(--surface2);border-radius:4px;height:4px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#f7b93e);transition:width .8s cubic-bezier(.4,0,.2,1);}
+
+/* Timeline */
+.timeline{position:relative;padding-left:16px;}
+.timeline::before{content:'';position:absolute;left:4px;top:0;bottom:0;width:1px;background:var(--border);}
+.timeline-item{position:relative;margin-bottom:12px;}
+.timeline-dot{position:absolute;left:-14px;top:3px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);}
+.timeline-date{font-size:9px;color:var(--text3);margin-bottom:2px;}
+.timeline-content{background:var(--surface2);border-radius:7px;padding:7px 9px;font-size:11px;color:var(--text2);line-height:1.5;border-left:2px solid var(--surface3);}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);z-index:100;display:flex;align-items:center;justify-content:center;padding:14px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:660px;width:100%;max-height:90vh;overflow-y:auto;transform:translateY(14px);transition:transform .25s;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;color:var(--accent);}
+.modal-close{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text3);width:23px;height:23px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;transition:all .15s;}
+.modal-close:hover{color:var(--text);border-color:var(--text3);}
+
+/* Toast */
+#toast{position:fixed;bottom:14px;right:14px;background:var(--surface3);border:1px solid var(--accent);border-radius:9px;padding:7px 11px;font-size:11px;font-weight:500;color:var(--text);z-index:200;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+
+/* Empty */
+.empty-state{text-align:center;padding:28px 14px;color:var(--text3);}
+.empty-state .empty-icon{font-size:34px;margin-bottom:7px;opacity:.5;}
+.empty-state p{font-size:11px;line-height:1.6;}
+
+/* Chart */
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;margin-bottom:9px;}
+.chart-title{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+canvas{width:100%!important;}
+
+/* Goal */
+.goal-item{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.goal-item.done{opacity:.5;}
+.goal-checkbox{width:17px;height:17px;border-radius:4px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:9px;transition:all .15s;}
+.goal-item.done .goal-checkbox{background:var(--good);border-color:var(--good);}
+.goal-text{flex:1;font-size:11px;color:var(--text2);}
+.goal-item.done .goal-text{text-decoration:line-through;color:var(--text3);}
+
+/* Notes */
+.note-block{background:var(--surface2);border-radius:7px;padding:7px 9px;font-size:11px;color:var(--text2);line-height:1.7;white-space:pre-wrap;border-left:2px solid var(--accent3);}
+.error-list-item{display:flex;align-items:flex-start;gap:5px;background:rgba(232,57,29,.05);border:1px solid rgba(232,57,29,.14);border-radius:7px;padding:5px 8px;margin-bottom:3px;font-size:10px;color:var(--text2);line-height:1.5;}
+.error-list-item::before{content:'⚠';color:var(--bad);flex-shrink:0;font-size:9px;margin-top:1px;}
+.badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:9px;font-weight:600;}
+.badge-league{background:rgba(245,166,35,.14);color:var(--accent);}
+.badge-role{background:rgba(138,144,158,.14);color:var(--text2);}
+.badge-okul{background:rgba(61,184,160,.14);color:var(--accent3);}
+.badge-bolge{background:rgba(245,166,35,.14);color:var(--accent);}
+hr{border:none;border-top:1px solid var(--border);margin:11px 0;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* Upcoming notice */
+.upcoming-notice{background:rgba(61,184,160,.05);border:1px solid rgba(61,184,160,.22);border-radius:9px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s;}
+.upcoming-notice:hover{border-color:var(--accent3);background:rgba(61,184,160,.09);}
+.un-icon{font-size:18px;flex-shrink:0;}
+.un-text{flex:1;font-size:11px;color:var(--accent3);line-height:1.4;}
+.un-days{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--accent3);flex-shrink:0;}
+
+/* OVERDUE notice */
+.overdue-notice{background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.3);border-radius:9px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s;}
+.overdue-notice:hover{border-color:var(--warn);}
+
+/* Calendar */
+.calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.cal-nav{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);padding:3px 10px;cursor:pointer;font-size:14px;transition:all .15s;}
+.cal-nav:hover{border-color:var(--accent);color:var(--accent);}
+.cal-month-label{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--text);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day-name{text-align:center;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:4px 0;}
+.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:54px;padding:3px 4px;transition:all .15s;cursor:default;}
+.cal-cell.has-match{border-color:rgba(245,166,35,.35);cursor:pointer;}
+.cal-cell.has-match:hover{border-color:var(--accent);background:var(--surface2);}
+.cal-cell.has-future{border-color:rgba(61,184,160,.35);cursor:pointer;}
+.cal-cell.has-future:hover{border-color:var(--accent3);}
+.cal-cell.today{border-color:rgba(245,166,35,.5);}
+.cal-cell.empty{background:transparent;border-color:transparent;}
+.cal-date-num{font-size:9px;font-weight:600;color:var(--text3);margin-bottom:2px;}
+.cal-cell.today .cal-date-num{color:var(--accent);}
+.cal-dot{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;font-size:8px;font-weight:700;margin:1px 1px;line-height:1;}
+
+/* QUIZ */
+.quiz-section-header{display:flex;gap:6px;margin-bottom:10px;}
+.q-diff-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--text3);transition:all .15s;}
+.q-diff-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.08);}
+.quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:9px;}
+.quiz-progress-bar{background:var(--surface2);border-radius:4px;height:3px;margin-bottom:14px;overflow:hidden;}
+.quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#f7b93e);transition:width .4s ease;border-radius:4px;}
+.quiz-q-num{font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.quiz-question{font-size:13px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:12px;}
+.quiz-options{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.quiz-option{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:11px;color:var(--text2);transition:all .15s;text-align:left;}
+.quiz-option:hover:not(.answered){border-color:var(--accent);color:var(--text);background:rgba(245,166,35,.05);}
+.quiz-option.correct{border-color:var(--good);background:rgba(61,184,160,.12);color:var(--good);}
+.quiz-option.wrong{border-color:var(--bad);background:rgba(232,57,29,.12);color:var(--bad);}
+.quiz-option.answered{cursor:default;}
+.quiz-explanation{background:var(--surface2);border-radius:7px;padding:8px 10px;font-size:10px;color:var(--text2);line-height:1.6;border-left:2px solid var(--accent3);margin-bottom:8px;}
+.quiz-tf-btns{display:flex;gap:7px;margin-bottom:10px;}
+.quiz-tf-btn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;transition:all .15s;color:var(--text2);}
+.quiz-tf-btn:hover:not(.answered){border-color:var(--accent);color:var(--accent);}
+.quiz-tf-btn.correct{border-color:var(--good);background:rgba(61,184,160,.14);color:var(--good);}
+.quiz-tf-btn.wrong{border-color:var(--bad);background:rgba(232,57,29,.14);color:var(--bad);}
+.quiz-tf-btn.answered{cursor:default;}
+.quiz-score-box{text-align:center;padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.quiz-score-val{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--accent);line-height:1;}
+.quiz-stats-row{display:flex;justify-content:center;gap:18px;margin:11px 0;}
+.quiz-stat{text-align:center;}
+.quiz-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;}
+.quiz-stat-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+
+/* Date/time picker row */
+.datetime-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;}
+@media(max-width:560px){.datetime-row{grid-template-columns:1fr 1fr 1fr;}}
 </style>
 </head>
 <body>
@@ -220,7 +247,7 @@
     </div>
   </div>
   <div class="header-stats">
-    <div class="hstat"><div class="hstat-val" id="hstat-total">0</div><div class="hstat-lbl">Toplam Maç</div></div>
+    <div class="hstat"><div class="hstat-val" id="hstat-total">0</div><div class="hstat-lbl">Toplam</div></div>
     <div class="hstat"><div class="hstat-val" id="hstat-month">0</div><div class="hstat-lbl">Bu Ay</div></div>
     <div class="hstat"><div class="hstat-val" id="hstat-avg">—</div><div class="hstat-lbl">Ort. Puan</div></div>
     <div class="hstat"><div class="hstat-val" id="hstat-upcoming">0</div><div class="hstat-lbl">Yaklaşan</div></div>
@@ -229,11 +256,11 @@
 
 <nav>
   <button class="nav-btn active" onclick="switchTab('dashboard',this)">📊 Özet</button>
-  <button class="nav-btn" onclick="switchTab('add',this)">➕ Maç Ekle</button>
+  <button class="nav-btn" onclick="switchTab('add',this)">➕ Ekle</button>
   <button class="nav-btn" onclick="switchTab('matches',this)">📋 Maçlarım</button>
   <button class="nav-btn" onclick="switchTab('calendar',this)">📅 Takvim</button>
   <button class="nav-btn" onclick="switchTab('analysis',this)">🔍 Analiz</button>
-  <button class="nav-btn" onclick="switchTab('quiz',this)">📚 Kural Quiz</button>
+  <button class="nav-btn" onclick="switchTab('quiz',this)">📚 Quiz</button>
   <button class="nav-btn" onclick="switchTab('goals',this)">🎯 Hedefler</button>
 </nav>
 
@@ -241,6 +268,7 @@
 
 <!-- ===== DASHBOARD ===== -->
 <div id="tab-dashboard" class="panel active">
+  <div id="overdue-section"></div>
   <div id="upcoming-section"></div>
   <div class="stats-grid">
     <div class="stat-box"><div class="stat-box-val" style="color:var(--accent)" id="sg-total">0</div><div class="stat-box-lbl">Toplam Maç</div></div>
@@ -249,42 +277,71 @@
     <div class="stat-box"><div class="stat-box-val" style="color:var(--bad)" id="sg-year">0</div><div class="stat-box-lbl">Bu Yıl</div></div>
   </div>
   <div class="section-title">📈 Son 8 Maç Trendi</div>
-  <div class="chart-wrap"><div class="chart-title">Öz-Değerlendirme Puanı</div><canvas id="trendChart" height="95"></canvas></div>
+  <div class="chart-wrap"><div class="chart-title">Öz-Değerlendirme Puanı</div><canvas id="trendChart" height="90"></canvas></div>
   <div class="section-title">⚠️ En Sık Hatalar</div>
   <div id="top-errors-list"><div class="empty-state"><div class="empty-icon">📭</div><p>Henüz veri yok.</p></div></div>
-  <div class="section-title">📝 Son Oynanan Maçlar</div>
+  <div class="section-title">📝 Son Yönetilen Maçlar</div>
   <div id="recent-matches"></div>
 </div>
 
-<!-- ===== ADD MATCH ===== -->
+<!-- ===== ADD / EDIT MATCH ===== -->
 <div id="tab-add" class="panel">
   <div class="card card-accent">
-    <div class="section-title">🏀 Yeni Maç Kaydı</div>
+    <div class="section-title" id="form-title">🏀 Yeni Maç Kaydı</div>
+    <input type="hidden" id="edit-id" value="">
 
-    <!-- Maç tipi: İleri tarih mi? -->
+    <!-- Durum -->
     <label>Maç Durumu</label>
-    <div class="type-toggle" style="margin-bottom:12px;">
-      <button class="type-btn active" onclick="setMatchStatus(this,'played')">✅ Oynadım</button>
-      <button class="type-btn" onclick="setMatchStatus(this,'upcoming')">📅 Yaklaşan Görev</button>
+    <div class="type-toggle" id="status-toggle">
+      <button class="type-btn active" onclick="setStatus(this,'managed')">✅ Yönettim</button>
+      <button class="type-btn" onclick="setStatus(this,'upcoming')">📅 Yaklaşan Görev</button>
     </div>
 
-    <div class="form-row">
-      <div><label>📅 Tarih</label><input type="date" id="m-date" autocomplete="off"></div>
-      <div><label>📍 Şehir / Salon</label><input type="text" id="m-venue" placeholder="İstanbul / Sinan Erdem" autocomplete="off"></div>
+    <!-- Tarih & Saat -->
+    <label>📅 Tarih ve Saat</label>
+    <div class="datetime-row">
+      <div>
+        <label style="font-size:9px;">Gün</label>
+        <select id="m-day" autocomplete="off"></select>
+      </div>
+      <div>
+        <label style="font-size:9px;">Ay</label>
+        <select id="m-month" autocomplete="off">
+          <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
+          <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
+          <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
+          <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:9px;">Yıl</label>
+        <select id="m-year" autocomplete="off"></select>
+      </div>
+      <div>
+        <label style="font-size:9px;">Saat</label>
+        <select id="m-hour" autocomplete="off"></select>
+      </div>
+      <div>
+        <label style="font-size:9px;">Dakika</label>
+        <select id="m-minute" autocomplete="off">
+          <option value="00">00</option><option value="15">15</option>
+          <option value="30">30</option><option value="45">45</option>
+        </select>
+      </div>
     </div>
 
-    <!-- Maç türü: Okul mu Bölge mi -->
+    <!-- Maç Türü -->
     <label>Maç Türü</label>
-    <div class="type-toggle">
-      <button class="type-btn active" onclick="setMatchType(this,'bolge')">🏆 Bölge / Kulüp Maçı</button>
-      <button class="type-btn" onclick="setMatchType(this,'okul')">🏫 Okul Maçı</button>
+    <div class="type-toggle" id="type-toggle">
+      <button class="type-btn active" onclick="setType(this,'bolge')">🏆 Bölge / Kulüp</button>
+      <button class="type-btn" onclick="setType(this,'okul')">🏫 Okul Maçı</button>
     </div>
 
-    <!-- BÖLGE MAÇI alanları -->
+    <!-- Bölge Alanları -->
     <div id="bolge-fields">
       <div class="form-row">
-        <div><label>🏠 Ev Sahibi Kulüp</label><input type="text" id="m-home" placeholder="örn. Fenerbahçe" autocomplete="off"></div>
-        <div><label>✈️ Deplasman Kulübü</label><input type="text" id="m-away" placeholder="örn. Anadolu Efes" autocomplete="off"></div>
+        <div><label>🏠 Ev Sahibi</label><input type="text" id="m-home" placeholder="örn. Fenerbahçe" autocomplete="off"></div>
+        <div><label>✈️ Deplasman</label><input type="text" id="m-away" placeholder="örn. Anadolu Efes" autocomplete="off"></div>
       </div>
       <div class="form-row">
         <div><label>🏆 Lig / Organizasyon</label>
@@ -292,17 +349,18 @@
             <option value="">Seç...</option>
             <option>BSL (Süper Lig)</option><option>1. Lig</option><option>2. Lig</option>
             <option>Bölgesel Lig</option><option>U18 Ligi</option><option>U16 Ligi</option>
-            <option>U14 Ligi</option><option>Kadınlar Ligi</option><option>Türkiye Kupası</option><option>Diğer Turnuva</option>
+            <option>U14 Ligi</option><option>Kadınlar Ligi</option>
+            <option>Türkiye Kupası</option><option>Diğer Turnuva</option>
           </select>
         </div>
         <div><label>📊 Skor</label><input type="text" id="m-score" placeholder="örn. 78 – 65" autocomplete="off"></div>
       </div>
     </div>
 
-    <!-- OKUL MAÇI alanları -->
+    <!-- Okul Alanları -->
     <div id="okul-fields" style="display:none;">
       <label>Kategori</label>
-      <div class="cat-grid" id="cat-grid">
+      <div class="cat-grid">
         <button class="cat-btn" onclick="selectCat(this,'Minik Erkekler')">Minik Erkekler</button>
         <button class="cat-btn" onclick="selectCat(this,'Minik Kızlar')">Minik Kızlar</button>
         <button class="cat-btn" onclick="selectCat(this,'Küçük Erkekler')">Küçük Erkekler</button>
@@ -313,36 +371,38 @@
         <button class="cat-btn" onclick="selectCat(this,'Genç Kızlar')">Genç Kızlar</button>
       </div>
       <div class="form-row">
-        <div><label>🏫 Ev Sahibi Okul</label><input type="text" id="m-home-school" placeholder="örn. Kadıköy Anadolu Lisesi" autocomplete="off"></div>
-        <div><label>🏫 Deplasman Okulu</label><input type="text" id="m-away-school" placeholder="örn. Beşiktaş İlköğretim" autocomplete="off"></div>
+        <div><label>📊 Skor</label><input type="text" id="m-score-okul" placeholder="örn. 32 – 18" autocomplete="off"></div>
+        <div></div>
       </div>
-      <div><label>📊 Skor</label><input type="text" id="m-score-school" placeholder="örn. 32 – 18" autocomplete="off"></div>
     </div>
 
+    <!-- Ortak Alanlar -->
     <div class="form-row">
-      <div><label>👤 Roldüm</label>
+      <div><label>📍 Şehir / Salon</label><input type="text" id="m-venue" placeholder="örn. İstanbul / Ülker" autocomplete="off"></div>
+      <div>
+        <label>Rol</label>
         <select id="m-role">
           <option value="">Seç...</option>
-          <option>Baş Hakem (U1)</option><option>2. Hakem (U2)</option>
-          <option>3. Hakem (U3)</option><option>Masa Görevlisi</option>
+          <option>Başhakem</option>
+          <option>Yardımcı Hakem</option>
         </select>
       </div>
-      <div><label>🤝 Birlikte Çalıştığım Hakemler</label><input type="text" id="m-partners" placeholder="İsimler (virgülle)" autocomplete="off"></div>
     </div>
+    <div><label>🤝 Birlikte Çalıştığım Hakemler</label><input type="text" id="m-partners" placeholder="İsimler (virgülle ayır)" autocomplete="off"></div>
 
     <!-- Gözlemci -->
     <label>👁️ Gözlemci</label>
-    <div class="type-toggle" style="margin-bottom:5px;">
-      <button class="type-btn active" onclick="setObserver(this,'none')">Yok</button>
-      <button class="type-btn" onclick="setObserver(this,'verbal')">Var — Sözlü</button>
-      <button class="type-btn" onclick="setObserver(this,'written')">Var — Yazılı</button>
+    <div class="type-toggle" id="obs-toggle">
+      <button class="type-btn active" onclick="setObs(this,'none')">Yok</button>
+      <button class="type-btn" onclick="setObs(this,'verbal')">Var — Sözlü</button>
+      <button class="type-btn" onclick="setObs(this,'written')">Var — Yazılı</button>
     </div>
-    <div id="observer-name-wrap" style="display:none;">
-      <input type="text" id="m-observer-name" placeholder="Gözlemci adı ve soyadı" autocomplete="off">
+    <div id="obs-name-row" style="display:none;">
+      <input type="text" id="m-obs-name" placeholder="Gözlemci adı soyadı (zorunlu)" autocomplete="off">
     </div>
 
-    <!-- Oynanan maç ek alanları -->
-    <div id="played-fields">
+    <!-- Oynanan Maç Ek Alanları -->
+    <div id="managed-fields">
       <hr>
       <label>⭐ Öz-Değerlendirme (1–10)</label>
       <div class="stars" id="star-rating">
@@ -355,32 +415,33 @@
       <hr>
       <label>⚠️ Yaptığım Hatalar</label>
       <div class="error-tags" id="error-tag-list"></div>
-      <label>✍️ Diğer Hata (virgülle ayır)</label>
-      <textarea id="m-custom-error" rows="2" placeholder="Listede olmayan hataları buraya yaz..."></textarea>
+      <label>✍️ Diğer Hata</label>
+      <textarea id="m-custom-error" rows="2" placeholder="Listedeki dışında hata varsa yaz..." autocomplete="off"></textarea>
       <hr>
       <label>💬 Maç Yorumu</label>
-      <textarea id="m-comment" rows="3" placeholder="Ne öğrendim? Ne iyi gitti? Ne düzeltmem lazım?"></textarea>
+      <textarea id="m-comment" rows="3" placeholder="Ne öğrendim? Ne iyi gitti? Ne düzeltmem lazım?" autocomplete="off"></textarea>
       <label>📌 Kritik Karar / Önemli An</label>
-      <textarea id="m-keymom" rows="2" placeholder="örn. 4. çeyrekte basket + faul kararında tereddüt ettim..."></textarea>
+      <textarea id="m-keymom" rows="2" placeholder="örn. 4. çeyrekte basket + faul kararında tereddüt ettim..." autocomplete="off"></textarea>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+    <div style="display:flex;gap:7px;margin-top:7px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="saveMatch()">✅ Kaydet</button>
-      <button class="btn btn-teal" id="duplicate-btn" style="display:none;" onclick="duplicateLastSchool()">📋 Aynı Maçtan Çoğalt</button>
+      <button class="btn btn-ghost" id="cancel-edit-btn" style="display:none;" onclick="cancelEdit()">✕ Vazgeç</button>
+      <button class="btn btn-teal" id="duplicate-btn" style="display:none;" onclick="duplicateSchool()">📋 Aynı Maçtan Çoğalt</button>
     </div>
   </div>
 </div>
 
 <!-- ===== MATCHES ===== -->
 <div id="tab-matches" class="panel">
-  <div style="display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap;">
-    <input type="text" id="search-input" placeholder="🔍 Ara..." style="max-width:200px;margin-bottom:0;" oninput="renderMatches()" autocomplete="off">
-    <select id="filter-type" style="max-width:140px;margin-bottom:0;" onchange="renderMatches()">
+  <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;">
+    <input type="text" id="search-input" placeholder="🔍 Ara..." style="max-width:180px;margin-bottom:0;" oninput="renderMatches()" autocomplete="off">
+    <select id="filter-type" style="max-width:130px;margin-bottom:0;" onchange="renderMatches()">
       <option value="">Tüm Türler</option><option value="bolge">Bölge / Kulüp</option><option value="okul">Okul</option>
     </select>
-    <select id="sort-select" style="max-width:130px;margin-bottom:0;" onchange="renderMatches()">
+    <select id="sort-select" style="max-width:120px;margin-bottom:0;" onchange="renderMatches()">
       <option value="date-desc">En Yeni</option><option value="date-asc">En Eski</option>
-      <option value="rating-desc">En Yüksek</option><option value="rating-asc">En Düşük</option>
+      <option value="rating-desc">En Yüksek Puan</option><option value="rating-asc">En Düşük Puan</option>
     </select>
   </div>
   <div id="matches-list"></div>
@@ -394,12 +455,12 @@
     <button class="cal-nav" onclick="calNav(1)">›</button>
   </div>
   <div class="cal-grid" id="cal-grid"></div>
-  <div style="margin-top:12px;display:flex;gap:11px;font-size:10px;color:var(--text3);flex-wrap:wrap;">
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:var(--good);margin-right:3px;vertical-align:middle;"></span>İyi (7+)</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:var(--warn);margin-right:3px;vertical-align:middle;"></span>Orta (5–6)</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:var(--bad);margin-right:3px;vertical-align:middle;"></span>Düşük (&lt;5)</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;border:1px solid var(--accent3);margin-right:3px;vertical-align:middle;"></span>Yaklaşan</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:3px;border:1px solid var(--accent);margin-right:3px;vertical-align:middle;"></span>Bugün</span>
+  <div style="margin-top:10px;display:flex;gap:10px;font-size:9px;color:var(--text3);flex-wrap:wrap;">
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--good);margin-right:3px;vertical-align:middle;"></span>İyi (7+)</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--warn);margin-right:3px;vertical-align:middle;"></span>Orta (5–6)</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--bad);margin-right:3px;vertical-align:middle;"></span>Düşük</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;border:1px solid var(--accent3);margin-right:3px;vertical-align:middle;"></span>Yaklaşan</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;border:1px solid var(--accent);margin-right:3px;vertical-align:middle;"></span>Bugün</span>
   </div>
 </div>
 
@@ -409,7 +470,7 @@
   <div id="error-analysis"><div class="empty-state"><div class="empty-icon">📊</div><p>Maç ekledikçe belirir.</p></div></div>
   <hr>
   <div class="section-title">📈 Gelişim Grafiği</div>
-  <div class="chart-wrap"><div class="chart-title">Tüm Oynanan Maçlar</div><canvas id="progressChart" height="95"></canvas></div>
+  <div class="chart-wrap"><div class="chart-title">Tüm Yönetilen Maçlar</div><canvas id="progressChart" height="90"></canvas></div>
   <hr>
   <div class="section-title">📓 Yorum Arşivi</div>
   <div id="comment-timeline"><div class="empty-state"><div class="empty-icon">📝</div><p>Henüz yorum yok.</p></div></div>
@@ -417,90 +478,62 @@
 
 <!-- ===== QUIZ ===== -->
 <div id="tab-quiz" class="panel">
-  <div id="quiz-setup">
-    <div class="section-title">📚 Kural Kitabı Quiz — AI Destekli</div>
-    <div class="api-key-section">
-      <label>🔑 Anthropic API Anahtarı</label>
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." style="margin-bottom:3px;" oninput="saveApiKey()" autocomplete="off">
-      <p class="api-note">Yalnızca bu sekme oturumu için saklanır. <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">Anahtar al →</a></p>
+  <div id="quiz-setup-view">
+    <div class="section-title">📚 Kural Quiz</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">TBF Basketbol Oyun Kuralları 2024'ten hazırlanmış sorularla kendini test et.</p>
+    <label>Zorluk Seviyesi</label>
+    <div class="quiz-section-header">
+      <button class="q-diff-btn active" onclick="setQuizDiff(this,'kolay')">🟢 Kolay</button>
+      <button class="q-diff-btn" onclick="setQuizDiff(this,'orta')">🟡 Orta</button>
+      <button class="q-diff-btn" onclick="setQuizDiff(this,'zor')">🔴 Zor</button>
     </div>
-    <div class="quiz-upload-zone" id="upload-zone" onclick="document.getElementById('pdf-file-input').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-      <div style="font-size:32px;">📄</div>
-      <p><strong style="color:var(--text);">TBF Kural Kitabı PDF'ini Yükle</strong><br>Tıkla veya sürükle-bırak</p>
-      <input type="file" id="pdf-file-input" accept=".pdf" onchange="handleFileSelect(event)">
-    </div>
-    <div id="pdf-loaded-info" style="display:none;margin-top:7px;padding:7px 11px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--accent3);">✅ <span id="pdf-name"></span> yüklendi</div>
-    <div class="quiz-controls" style="margin-top:11px;">
-      <div>
-        <label style="margin-bottom:4px;">Zorluk</label>
-        <div class="quiz-difficulty">
-          <button class="diff-btn active" onclick="setDiff(this,'kolay')">Kolay</button>
-          <button class="diff-btn" onclick="setDiff(this,'orta')">Orta</button>
-          <button class="diff-btn" onclick="setDiff(this,'zor')">Zor</button>
-        </div>
-      </div>
-      <div>
-        <label style="margin-bottom:4px;">Soru Sayısı</label>
-        <select id="q-count" style="width:85px;margin-bottom:0;"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option></select>
-      </div>
-      <div>
-        <label style="margin-bottom:4px;">Konu</label>
-        <select id="q-topic" style="width:165px;margin-bottom:0;">
-          <option value="karışık">Karışık</option>
-          <option value="kişisel fauller ve temas kuralları">Kişisel Fauller</option>
-          <option value="teknik, sportmenlik dışı ve diskalifiye edici fauller">Teknik & Sportmenlik Dışı Fauller</option>
-          <option value="ihlaller (yürüme, çift adım, 3/8/24 saniye kuralları)">İhlaller</option>
-          <option value="oyun süresi, mola ve oyuncu değişikliği">Oyun Düzenlemeleri</option>
-          <option value="hakemler, masa görevlileri ve hakem işaretleri">Hakemler & Masa</option>
-          <option value="serbest atışlar ve şarjsız yarım daire">Serbest Atışlar</option>
-        </select>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="startQuiz()">🚀 Quizi Başlat</button>
-    <div id="quiz-history-section" style="display:none;margin-top:16px;">
-      <div class="section-title">📊 Quiz Geçmişi</div>
+    <button class="btn btn-primary" onclick="startQuiz()" style="margin-bottom:14px;">🚀 Quizi Başlat</button>
+    <div id="quiz-history-section" style="display:none;">
+      <div class="section-title">📊 Geçmiş</div>
       <div id="quiz-history-list"></div>
     </div>
   </div>
-  <div id="quiz-generating" style="display:none;"><div class="quiz-generating"><div class="quiz-spinner"></div><p id="gen-status">Sorular oluşturuluyor...</p></div></div>
-  <div id="quiz-active" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-size:11px;color:var(--text3);" id="quiz-progress-label">Soru 1 / 10</div>
+  <div id="quiz-active-view" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;">
+      <div style="font-size:10px;color:var(--text3);" id="quiz-prog-lbl"></div>
       <button class="btn btn-ghost btn-sm" onclick="endQuiz()">✕ Bitir</button>
     </div>
     <div class="quiz-card" id="quiz-card"></div>
-    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none;">Sonraki →</button>
+    <button class="btn btn-primary" id="quiz-next-btn" onclick="nextQ()" style="display:none;">Sonraki →</button>
   </div>
-  <div id="quiz-result" style="display:none;">
+  <div id="quiz-result-view" style="display:none;">
     <div class="quiz-score-box">
-      <div style="font-size:32px;margin-bottom:6px;">🏆</div>
-      <div class="quiz-score-val" id="result-score">0/0</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:5px;" id="result-msg"></div>
+      <div style="font-size:30px;margin-bottom:5px;">🏆</div>
+      <div class="quiz-score-val" id="r-score"></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;" id="r-msg"></div>
       <div class="quiz-stats-row">
-        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--good)" id="result-correct">0</div><div class="quiz-stat-lbl">Doğru</div></div>
-        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--bad)" id="result-wrong">0</div><div class="quiz-stat-lbl">Yanlış</div></div>
-        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--accent)" id="result-pct">0%</div><div class="quiz-stat-lbl">Başarı</div></div>
+        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--good)" id="r-correct"></div><div class="quiz-stat-lbl">Doğru</div></div>
+        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--bad)" id="r-wrong"></div><div class="quiz-stat-lbl">Yanlış</div></div>
+        <div class="quiz-stat"><div class="quiz-stat-val" style="color:var(--accent)" id="r-pct"></div><div class="quiz-stat-lbl">Başarı</div></div>
       </div>
-      <button class="btn btn-primary" onclick="resetQuiz()" style="margin-top:7px;">🔄 Yeni Quiz</button>
+      <button class="btn btn-primary" onclick="resetQuiz()" style="margin-top:7px;">🔄 Tekrar</button>
     </div>
-    <div style="margin-top:12px;" id="result-review"></div>
+    <div style="margin-top:11px;" id="r-review"></div>
   </div>
 </div>
 
 <!-- ===== GOALS ===== -->
 <div id="tab-goals" class="panel">
   <div class="card">
-    <div class="section-title" style="margin-bottom:9px;">🎯 Yeni Hedef</div>
+    <div class="section-title" style="margin-bottom:8px;">🎯 Yeni Hedef</div>
     <div class="form-row">
-      <div><label>Hedef</label><input type="text" id="goal-text" placeholder="örn. Aylık 8 maç çık" style="margin-bottom:0;" autocomplete="off"></div>
+      <div><label>Hedef</label><input type="text" id="goal-text" placeholder="örn. Aylık 8 maç" style="margin-bottom:0;" autocomplete="off"></div>
       <div><label>Kategori</label>
-        <select id="goal-cat" style="margin-bottom:0;"><option>Maç Sayısı</option><option>Teknik Gelişim</option><option>Fiziksel</option><option>Kural Bilgisi</option><option>Psikolojik</option><option>Diğer</option></select>
+        <select id="goal-cat" style="margin-bottom:0;">
+          <option>Maç Sayısı</option><option>Teknik Gelişim</option><option>Fiziksel</option>
+          <option>Kural Bilgisi</option><option>Psikolojik</option><option>Diğer</option>
+        </select>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="addGoal()" style="margin-top:7px;">➕ Hedef Ekle</button>
+    <button class="btn btn-primary" onclick="addGoal()" style="margin-top:6px;">➕ Ekle</button>
   </div>
-  <div class="section-title" style="margin-top:4px;">📋 Hedeflerim</div>
-  <div id="goals-list"><div class="empty-state"><div class="empty-icon">🎯</div><p>Henüz hedef eklenmedi.</p></div></div>
+  <div class="section-title" style="margin-top:3px;">📋 Hedeflerim</div>
+  <div id="goals-list"><div class="empty-state"><div class="empty-icon">🎯</div><p>Henüz hedef yok.</p></div></div>
 </div>
 
 </main>
@@ -513,20 +546,225 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ============================================================
-// BASKETBOL HATA KATEGORİLERİ
+// QUIZ SORULARI — Buraya kendi sorularını ekle
+// ============================================================
+const QUIZ_QUESTIONS = {
+  kolay: [
+    {
+      type:'mcq',
+      question:'Basketbol oyunu kaç kişiden oluşan iki takım arasında oynanır?',
+      options:['A) 4','B) 5','C) 6','D) 7'],
+      answer:1,
+      explanation:'Madde 1.1: Basketbol, 5 kişiden oluşan 2 takımla oynanır.'
+    },
+    {
+      type:'tf',
+      question:'Bir oyuncu 5 kişisel faul yaptığında oyun dışı kalır.',
+      answer:true,
+      explanation:'Madde 40.1: 5 faul yapan oyuncu hakem tarafından bilgilendirilir ve oyunu terk eder.'
+    },
+    {
+      type:'mcq',
+      question:'Bir çeyrek kaç dakikadır?',
+      options:['A) 8 dakika','B) 10 dakika','C) 12 dakika','D) 15 dakika'],
+      answer:1,
+      explanation:'Madde 8.1: Oyun, her biri 10 dakikalık 4 çeyrekten oluşur.'
+    },
+    {
+      type:'tf',
+      question:'Serbest atış çizgisi, dip çizgisinin iç kenarından 5.80 m uzaklıktadır.',
+      answer:true,
+      explanation:'Madde 2.5.3: Serbest atış çizgisinin en uzak kenarı dip çizgisinin iç kenarından 5.80 m uzaklıktadır.'
+    },
+    {
+      type:'mcq',
+      question:'3 sayılık atış bölgesini belirleyen yayın yarıçapı kaç metredir?',
+      options:['A) 5.80 m','B) 6.25 m','C) 6.75 m','D) 7.25 m'],
+      answer:2,
+      explanation:'Madde 2.5.4: Rakibin sepetinin tam merkezinin altından yayın dış kenarına 6.75 m yarıçaplı bir yay.'
+    },
+    {
+      type:'tf',
+      question:'Hakemler sahadan yapılan başarılı bir atıştan sonra düdük çalabilir.',
+      answer:false,
+      explanation:'Madde 47.2: Hakemler sahadan yapılan başarılı bir atış, başarılı bir serbest atış ya da topun canlanmasından sonra düdük çalmayacaktır.'
+    },
+    {
+      type:'mcq',
+      question:'Her mola kaç dakika sürer?',
+      options:['A) 30 saniye','B) 1 dakika','C) 2 dakika','D) 3 dakika'],
+      answer:1,
+      explanation:'Madde 18.2.1: Her mola 1 dakika sürecektir.'
+    },
+    {
+      type:'tf',
+      question:'Saha, sınır çizgisinin iç kenarından ölçüldüğünde 28 m uzunluğunda ve 15 m genişliğindedir.',
+      answer:true,
+      explanation:'Madde 2.1: Saha, sınır çizgisinin iç kenarından ölçüldüğünde 28 m uzunluğunda, 15 m genişliğinde olacaktır.'
+    },
+    {
+      type:'mcq',
+      question:'Bir takım kaç yedek oyuncu dahil en fazla kaç oyuncu kayıt ettirebilir?',
+      options:['A) 10 oyuncu','B) 12 oyuncu','C) 14 oyuncu','D) 15 oyuncu'],
+      answer:1,
+      explanation:'Madde 4.2.1: Her takım bir kaptan dahil oynama hakkı bulunan en fazla 12 oyuncu ile oluşur.'
+    },
+    {
+      type:'tf',
+      question:'Oyuncu değişikliği isteğinde yalnızca başantrenör bulunabilir.',
+      answer:false,
+      explanation:'Madde 19.3.1: Yalnızca yedek oyuncu değişiklik talebinde bulunabilir; başantrenör değil.'
+    },
+  ],
+  orta: [
+    {
+      type:'mcq',
+      question:'Şut saati ihlali durumunda top rakibe hangi noktadan verilir?',
+      options:['A) Merkez çizgisinden','B) En yakın yerden','C) Serbest atış çizgisinin uzantısından','D) Dip çizgiden'],
+      answer:1,
+      explanation:'Madde 29: Şut saati ihlalinde top, rakip takıma ihlale en yakın yerden verilir.'
+    },
+    {
+      type:'tf',
+      question:'Hava atışında, sıçrayacak oyuncular orta dairenin kendi sepetlerine yakın yarısında durmalıdır.',
+      answer:true,
+      explanation:'Madde 12.2.1: Hava atışına katılacak her oyuncu ayakları orta dairenin kendi sepetine yakın olan yarısının içinde olacak şekilde durur.'
+    },
+    {
+      type:'mcq',
+      question:'Bir takım ön sahasında canlı topu kontrol ederken oyuncu hangi ihlali yaparsa geri sahaya dönen top ihlaline neden olur?',
+      options:['A) Topa bacağıyla dokunursa','B) Ön sahada son temas eden oyuncunun takım arkadaşı vücudunun bir kısmı geri sahayla temas ederken topa ilk dokunan oyuncu olursa','C) Top 3 saniyeden fazla kısıtlamalı alanda kalırsa','D) Oyuncu çift adım atarsa'],
+      answer:1,
+      explanation:'Madde 30.1.2: Ön sahada topu kontrol eden takımın bir oyuncusu ön sahada topa son temas eder ve o takımın bir oyuncusu vücudunun bir kısmı geri sahayla temas ediyorken topa ilk temas eden olursa ihlal gerçekleşir.'
+    },
+    {
+      type:'tf',
+      question:'Teknik faul, takım faulü sayılır ve serbest atış hakkı doğurur.',
+      answer:true,
+      explanation:'Madde 36.3.1–36.3.2: Oyuncuya verilen teknik faul takım faulü olarak sayılır ve rakiplere 1 serbest atış verilir.'
+    },
+    {
+      type:'mcq',
+      question:'Oyun saati 4. çeyrekte 2:00 dakika veya daha az gösterdiğinde sahadan başarılı bir atıştan sonra sayı yapan takıma mola verilebilir mi?',
+      options:['A) Evet, her zaman verilebilir','B) Hayır, hakem oyunu durdurmadıkça verilemez','C) Sadece rakip itiraz ederse verilebilir','D) Sadece son 30 saniyede verilemez'],
+      answer:1,
+      explanation:'Madde 18.2.8: Oyun saati 4. çeyrekte veya uzatmada 2:00 dakika veya daha az gösterdiğinde sahadan başarılı atıştan sonra hakem oyunu durdurmadıkça sayı atan takıma mola verilmez.'
+    },
+    {
+      type:'tf',
+      question:'Şarjsız yarım daire alanındaki savunma oyuncusuna şarj faulu çalınabilir.',
+      answer:false,
+      explanation:'Madde 33.10: Şarjsız yarım daire alanına doğru içeriye yüklenme sırasında, bu alandaki savunma oyuncusuna takım kontrolü (şarj) faulu çalınamaz.'
+    },
+    {
+      type:'mcq',
+      question:'Oyuncu değişikliği süreci ne zaman tamamlanmış sayılır?',
+      options:['A) Yedek oyuncu sandalyeden kalktığında','B) Hakem yedek oyuncuyu sahaya girmeye çağırdığında','C) Hakem düdüğünü çalıp değişiklik işaretini verdiğinde','D) Yedek oyuncu sınır çizgisine geldiğinde'],
+      answer:2,
+      explanation:'Madde 4.2.3: Hakem bir yedek oyuncuyu "resmi değişiklik işaretiyle" sahaya girmeye çağırdığında yedek, oyuncu olur.'
+    },
+    {
+      type:'tf',
+      question:'Dördüncü çeyrekte eşitlik varsa 5 dakikalık uzatmalar oynanır ve beraberlik bozulana kadar devam edilir.',
+      answer:true,
+      explanation:'Madde 8.7: Dördüncü çeyrek sonunda skor eşitse oyun, beraberlik bozulana kadar her biri 5 dakika süren uzatmalarla devam eder.'
+    },
+    {
+      type:'mcq',
+      question:'Serbest atış yapılırken atışı yapan oyuncu top elini terk ettikten kaç saniye içinde topu elinden çıkarmalıdır?',
+      options:['A) 3 saniye','B) 4 saniye','C) 5 saniye','D) 8 saniye'],
+      answer:2,
+      explanation:'Madde 43.2.3: Hakem tarafından top kullanımına verildikten sonra oyuncu 5 saniye içinde topu elinden çıkaracaktır.'
+    },
+    {
+      type:'tf',
+      question:'Sportmenlik dışı faul alan bir oyuncuya karşı takımın ön sahasındaki hakem masası karşısındaki topu oyuna sokma çizgisinden top verilir.',
+      answer:true,
+      explanation:'Madde 37.2.2: Sportmenlik dışı faulden sonra takımın ön sahasındaki hakem masasının karşısında bulunan topu oyuna sokma çizgisinden top verilir.'
+    },
+  ],
+  zor: [
+    {
+      type:'mcq',
+      question:'Oyun saati 0.2 veya 0.1 saniye gösterdiğinde, geçerli atış hangisidir?',
+      options:['A) Her türlü atış geçerlidir','B) Yalnızca tipleme veya smaç','C) Yalnızca serbest atış','D) Pas atışı geçerlidir'],
+      answer:1,
+      explanation:'Madde 16.2.5: Oyun saati 0.2 ya da 0.1 saniye gösterirse geçerli atış tipi ancak tipleyerek ya da doğrudan topu smaç yaparak olabilir.'
+    },
+    {
+      type:'tf',
+      question:'Birinci çeyrekte yapılan teknik faul cezası 2. çeyreğin başında uygulanır.',
+      answer:false,
+      explanation:'Madde 8.9: Oyun arasında teknik, sportmenlik dışı veya diskalifiye edici faul yapılırsa olası serbest atışlar takip eden çeyreğin başlamasından önce yönetilir. Çeyrek içinde yapılan faulin cezası hemen uygulanır.'
+    },
+    {
+      type:'mcq',
+      question:'Pozisyon sırası (alternatif top kontrolü) uygulamasında top bir sonraki çeyrek başında nasıl oyuna sokulur?',
+      options:['A) Hava atışıyla','B) En yakın yerden','C) Hakem masasının karşısındaki orta çizgi uzantısından','D) Dip çizgiden'],
+      answer:2,
+      explanation:'Madde 12.6.3: Bir çeyreğin sonunda pozisyon sırası hakkına sahip olan takım, başka ceza yoksa hakem masasının karşısındaki orta çizginin uzantısından topu oyuna sokarak bir sonraki çeyreğe başlar.'
+    },
+    {
+      type:'tf',
+      question:'Şut saati ön sahada 14 saniye veya daha fazla gösteriyorken topu kontrol eden takıma teknik faul verilirse şut saati başa alınmaz, kaldığı yerden devam eder.',
+      answer:true,
+      explanation:'Madde 29.2.4: Topu kontrol eden takımın yaptığı teknik faul nedeniyle oyun durdurulduğunda şut saati başa alınmaz, durdurulduğu süreden devam eder.'
+    },
+    {
+      type:'mcq',
+      question:'Düzeltilebilir hata (Madde 44) kapsamında yanlış oyuncuya faul yazıldıktan sonra oyun devam etmiş ve aynı takım sayı yapmışsa ne olur?',
+      options:['A) Sayı iptal edilir ve hata düzeltilir','B) Hata göz ardı edilir, sayı geçerlidir','C) Tekrar oynanır','D) Rakip takıma serbest atış hakkı verilir'],
+      answer:1,
+      explanation:'Madde 44.4.2: Aynı takım hata sonucu topu oyuna soktuktan sonra sayı yaparsa hata göz ardı edilir, sayı geçerlidir.'
+    },
+    {
+      type:'tf',
+      question:'Kavga sırasında takım sırasından ayrılan başantrenör, düzeni yeniden sağlamak için sahaya girdiğinde diskalifiye edilmez.',
+      answer:true,
+      explanation:'Madde 39.2.2: Sadece başantrenör ve/veya birinci yardımcı antrenörün hakemlere düzeni sağlamak için yardım amacıyla sahayı terk etmesine izin verilir; diskalifiye edilmezler.'
+    },
+    {
+      type:'mcq',
+      question:'Anlık Tekrar Sistemi (IRS) incelemesi 4. çeyrekte 2:00 dakika veya daha az süre kaldığında hangi konu için kullanılamaz?',
+      options:['A) Atışın 2 veya 3 sayı olduğunu belirlemek için','B) Topun saha dışına kimin çıkardığını belirlemek için','C) İki takımla ilgisi olmayan bir nedenle şut saatini sıfırlamak için','D) Atışın şut saati sesinden önce elden çıkıp çıkmadığı için'],
+      answer:2,
+      explanation:'Madde F.3.2: 4. çeyrekte 2:00\'de ya da daha az süre kaldığında sahadan başarılı atışın şut saatinden önce elden çıkıp çıkmadığı, faul zamanlaması ve müdahale konuları incelenebilir; ancak listede "iki takımla ilgisi olmayan bir nedenle şut saatini sıfırlamak" bu bölümde yer almaz; bu Madde F.3.3 kapsamındadır.'
+    },
+    {
+      type:'tf',
+      question:'Bir oyuncunun son serbest atışı sırasında sayıya yönelen topa bir savunma oyuncusu müdahale ederse hücum takımına 1 sayı verilir ve ardından savunma oyuncusuna teknik faul çalınır.',
+      answer:true,
+      explanation:'Madde 31.3.3 ve 36.2.1: Son serbest atış sırasında savunma oyuncusu tarafından sayıya yönelen topa müdahale olursa hücum takımına 1 sayı verilir ve savunma oyuncusuna teknik faul çalınır.'
+    },
+    {
+      type:'mcq',
+      question:'Geri sahadan ön sahaya dripling yaparken geri sahaya dönüş ihlali ne zaman gerçekleşmiş sayılır?',
+      options:['A) Top geri sahaya temas ettiği anda','B) Dripling yapan oyuncunun her iki ayağı ve top tamamen ön sahaya temas ettiği anda','C) Sadece top geri sahaya temas ettiğinde','D) Oyuncu driblingini tamamladığında'],
+      answer:1,
+      explanation:'Madde 28.1.2: Geri sahadan ön sahaya yapılan driplingSırasında, top ve dripling yapan oyuncunun her iki ayağı tamamen ön sahaya temas ettiğinde topun ön sahaya geçtiği kabul edilir. Tersi durumda geri dönüş ihlali oluşur.'
+    },
+    {
+      type:'tf',
+      question:'Çift faul durumunda her iki oyuncuya da kişisel faul yazılır ancak serbest atış kullandırılmaz.',
+      answer:true,
+      explanation:'Madde 35.2: Çift faul durumunda her oyuncuya kişisel ya da sportmenlik dışı/diskalifiye edici faul verilir, ancak serbest atış hakkı verilmez.'
+    },
+  ]
+};
+
+// ============================================================
+// HATALAR
 // ============================================================
 const ERROR_CATS=[
   'Pozisyon hatası (mekanik)','Kural yanlış uygulandı','Basket + faul kararı',
-  'Adım (yürüme) gözden kaçtı','Çift top (iki el dripling) gözden kaçtı',
-  'Çift adım gözden kaçtı','Geç karar verildi',
-  'Yanlış takıma atış fırsatı verildi','Hatalı kişisel faul kararı',
-  'Teknik faul gerekiyordu verilmedi','Sportmenlik dışı faul kaçırıldı',
-  '3 saniye ihlali gözden kaçtı','8 saniye ihlali gözden kaçtı',
-  '24 saniye ihlali gözden kaçtı','Taç (saha dışı top) kararı hatalı',
-  'Şarj/blok kararı hatalı','Perdede faul kaçırıldı veya hatalı çalındı',
-  'Serbest atış ihlali gözden kaçtı','Sayıya yönelen topa müdahale kaçırıldı',
-  'İletişim eksikliği (partner hakemle)','Skor tabelası / süre hatası',
-  'Konsantrasyon kaybı','Rakip hakem ile uyumsuzluk',
+  'Adım (yürüme) gözden kaçtı','Çift adım gözden kaçtı','Çift top (iki el dripling) kaçırıldı',
+  'Geç karar verildi','Yanlış takıma atış fırsatı','Hatalı kişisel faul kararı',
+  'Teknik faul verilmedi (gerekiyordu)','Sportmenlik dışı faul kaçırıldı',
+  '3 saniye ihlali kaçırıldı','8 saniye ihlali kaçırıldı','24 saniye ihlali kaçırıldı',
+  'Taç (saha dışı top) kararı hatalı','Şarj/blok kararı hatalı',
+  'Perdede faul kaçırıldı / hatalı çalındı','Serbest atış ihlali kaçırıldı',
+  'Sayıya yönelen topa müdahale kaçırıldı','İletişim eksikliği (partner hakemle)',
+  'Skor tabelası / süre hatası','Konsantrasyon kaybı','Rakip hakem ile uyumsuzluk',
 ];
 
 // ============================================================
@@ -536,36 +774,72 @@ let matches   = JSON.parse(localStorage.getItem('hd_matches')||'[]');
 let goals     = JSON.parse(localStorage.getItem('hd_goals')||'[]');
 let quizHist  = JSON.parse(localStorage.getItem('hd_quiz')||'[]');
 
-let currentRating=0, selectedErrors=[], selectedCat='', matchStatus='played', matchType='bolge', observerStatus='none';
+let currentRating=0, selectedErrors=[], selectedCat='';
+let matchStatus='managed', matchType='bolge', obsStatus='none';
+let editingId=null;
 let trendChart=null, progressChart=null;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
-let quizDiff='kolay', questions=[], qIndex=0, qCorrect=0, qAnswered=false;
+let quizDiff='kolay', qList=[], qIdx=0, qCorrect=0, qAnswered=false;
 
 // ============================================================
-// HELPERS
+// DATE / TIME SELECTORS INIT
 // ============================================================
-const today=()=>new Date().toISOString().slice(0,10);
-const isFuture=m=>m.upcoming||m.date>today();
-const isPast=m=>!isFuture(m);
+function initDateSelectors(){
+  const dayEl=document.getElementById('m-day');
+  for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=String(i).padStart(2,'0');o.textContent=i;dayEl.appendChild(o);}
+  const yearEl=document.getElementById('m-year');
+  const cy=new Date().getFullYear();
+  for(let y=cy-3;y<=cy+2;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===cy)o.selected=true;yearEl.appendChild(o);}
+  const hourEl=document.getElementById('m-hour');
+  for(let h=0;h<24;h++){const o=document.createElement('option');o.value=String(h).padStart(2,'0');o.textContent=String(h).padStart(2,'0');hourEl.appendChild(o);}
+  // Set current date/time defaults
+  const now=new Date();
+  document.getElementById('m-day').value=String(now.getDate()).padStart(2,'0');
+  document.getElementById('m-month').value=now.getMonth()+1;
+  document.getElementById('m-year').value=now.getFullYear();
+  document.getElementById('m-hour').value=String(now.getHours()).padStart(2,'0');
+  document.getElementById('m-minute').value=now.getMinutes()<15?'00':now.getMinutes()<30?'15':now.getMinutes()<45?'30':'45';
+}
+
+function getDateString(){
+  const d=document.getElementById('m-day').value;
+  const mo=String(document.getElementById('m-month').value).padStart(2,'0');
+  const y=document.getElementById('m-year').value;
+  return `${y}-${mo}-${d}`;
+}
+function getTimeString(){
+  return `${document.getElementById('m-hour').value}:${document.getElementById('m-minute').value}`;
+}
+function setDateTimeFromString(dateStr,timeStr){
+  if(!dateStr)return;
+  const parts=dateStr.split('-');
+  if(parts.length===3){
+    document.getElementById('m-year').value=parts[0];
+    document.getElementById('m-month').value=parseInt(parts[1]);
+    document.getElementById('m-day').value=parts[1]?String(parseInt(parts[2])).padStart(2,'0'):'01';
+  }
+  if(timeStr){
+    const tp=timeStr.split(':');
+    document.getElementById('m-hour').value=tp[0]||'00';
+    document.getElementById('m-minute').value=tp[1]||'00';
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload=()=>{
+  initDateSelectors();
+  renderErrorTags();
+  renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
+  updateHeaderStats();
+};
 
 function save(){
   localStorage.setItem('hd_matches',JSON.stringify(matches));
   localStorage.setItem('hd_goals',JSON.stringify(goals));
   localStorage.setItem('hd_quiz',JSON.stringify(quizHist));
 }
-function saveApiKey(){sessionStorage.setItem('hd_api_key',document.getElementById('api-key-input').value.trim());}
-
-// ============================================================
-// INIT
-// ============================================================
-window.onload=()=>{
-  document.getElementById('m-date').value=today();
-  const sk=sessionStorage.getItem('hd_api_key');
-  if(sk)document.getElementById('api-key-input').value=sk;
-  renderErrorTags();
-  renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
-  updateHeaderStats();
-};
 
 // ============================================================
 // TABS
@@ -585,173 +859,219 @@ function switchTab(tab,btn){
 // ============================================================
 // FORM CONTROLS
 // ============================================================
-function setMatchStatus(btn,val){
+function setStatus(btn,val){
   matchStatus=val;
-  document.querySelectorAll('.type-toggle')[0].querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('status-toggle').querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('played-fields').style.display=val==='played'?'':'none';
-  document.getElementById('duplicate-btn').style.display='none';
+  document.getElementById('managed-fields').style.display=val==='managed'?'':'none';
 }
-
-function setMatchType(btn,val){
+function setType(btn,val){
   matchType=val;
-  document.querySelectorAll('.type-toggle')[1].querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('type-toggle').querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('bolge-fields').style.display=val==='bolge'?'':'none';
   document.getElementById('okul-fields').style.display=val==='okul'?'':'none';
-  selectedCat='';
-  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  selectedCat='';document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
 }
-
 function selectCat(btn,cat){
   selectedCat=cat;
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
-
-function setObserver(btn,val){
-  observerStatus=val;
-  document.querySelectorAll('.type-toggle')[2]?.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
-  // Find observer toggle buttons
-  document.querySelectorAll('#tab-add .type-btn').forEach(b=>{
-    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes('setObserver')){b.classList.remove('active');}
-  });
+function setObs(btn,val){
+  obsStatus=val;
+  document.getElementById('obs-toggle').querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('observer-name-wrap').style.display=val==='none'?'none':'';
+  document.getElementById('obs-name-row').style.display=val==='none'?'none':'';
+  if(val==='none')document.getElementById('m-obs-name').value='';
 }
-
 function setStar(n){currentRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));}
-
 function renderErrorTags(){
   document.getElementById('error-tag-list').innerHTML=ERROR_CATS.map(e=>
-    `<span class="error-tag ${selectedErrors.includes(e)?'selected':''}" onclick="toggleError(this,'${e.replace(/'/g,"\\'")}')">${e}</span>`
+    `<span class="error-tag ${selectedErrors.includes(e)?'selected':''}" onclick="toggleErr(this,'${e.replace(/'/g,"\\'")}')">${e}</span>`
   ).join('');
 }
-
-function toggleError(el,n){
-  if(selectedErrors.includes(n)){selectedErrors=selectedErrors.filter(x=>x!==n);el.classList.remove('selected');}
-  else{selectedErrors.push(n);el.classList.add('selected');}
-}
+function toggleErr(el,n){if(selectedErrors.includes(n)){selectedErrors=selectedErrors.filter(x=>x!==n);el.classList.remove('selected');}else{selectedErrors.push(n);el.classList.add('selected');}}
 
 // ============================================================
-// BUILD MATCH NAME
+// BUILD NAME
 // ============================================================
-function buildMatchName(){
+function buildName(){
   if(matchType==='bolge'){
     const h=document.getElementById('m-home').value.trim();
     const a=document.getElementById('m-away').value.trim();
-    if(h&&a)return `${h} – ${a}`;
-    if(h)return h;
-    return 'Bölge Maçı';
+    return (h&&a)?`${h} – ${a}`:h||a||'Bölge Maçı';
   }else{
-    const h=document.getElementById('m-home-school').value.trim();
-    const a=document.getElementById('m-away-school').value.trim();
     const cat=selectedCat||'Okul Maçı';
-    if(h&&a)return `${cat}: ${h} – ${a}`;
+    const h=document.getElementById('m-home').value.trim(); // Not used for okul
     return cat;
   }
 }
 
 // ============================================================
-// SAVE MATCH
+// SAVE / EDIT MATCH
 // ============================================================
 function saveMatch(){
-  const date=document.getElementById('m-date').value;
-  if(!date){showToast('⚠️ Tarih zorunlu!');return;}
-  if(matchStatus==='played'&&!currentRating){showToast('⭐ Puan vermeyi unutma!');return;}
+  const date=getDateString();
+  const time=getTimeString();
+  if(!date){showToast('⚠️ Tarih seç!');return;}
+  if(matchStatus==='managed'&&!currentRating){showToast('⭐ Puan vermeyi unutma!');return;}
   if(matchType==='okul'&&!selectedCat){showToast('⚠️ Kategori seçmeyi unutma!');return;}
+  if(obsStatus!=='none'&&!document.getElementById('m-obs-name').value.trim()){
+    showToast('⚠️ Gözlemci adını gir!');return;
+  }
 
   const ce=document.getElementById('m-custom-error').value.trim();
-  const allErr=matchStatus==='played'?(ce?[...selectedErrors,...ce.split(',').map(s=>s.trim()).filter(Boolean)]:[...selectedErrors]):[];
-  const obs=observerStatus==='none'?'Yok':(document.getElementById('m-observer-name').value.trim()||'Gözlemci var');
-  const score=matchType==='bolge'?document.getElementById('m-score').value.trim():document.getElementById('m-score-school').value.trim();
+  const allErr=matchStatus==='managed'?(ce?[...selectedErrors,...ce.split(',').map(s=>s.trim()).filter(Boolean)]:[...selectedErrors]):[];
 
-  const m={
-    id:Date.now(),date,
-    name:buildMatchName(),
+  const obsVal=obsStatus==='none'?'Yok':`${obsStatus==='verbal'?'Sözlü':'Yazılı'} — ${document.getElementById('m-obs-name').value.trim()}`;
+  const score=matchType==='bolge'?document.getElementById('m-score').value.trim():document.getElementById('m-score-okul').value.trim();
+
+  const obj={
+    id:editingId||Date.now(),
+    date,time,
     matchType,
     category:matchType==='okul'?selectedCat:'',
-    homeTeam:matchType==='bolge'?document.getElementById('m-home').value.trim():document.getElementById('m-home-school').value.trim(),
-    awayTeam:matchType==='bolge'?document.getElementById('m-away').value.trim():document.getElementById('m-away-school').value.trim(),
+    name:buildName(),
+    homeTeam:matchType==='bolge'?document.getElementById('m-home').value.trim():'',
+    awayTeam:matchType==='bolge'?document.getElementById('m-away').value.trim():'',
     league:matchType==='bolge'?document.getElementById('m-league').value:'',
     score,
-    role:document.getElementById('m-role').value,
     venue:document.getElementById('m-venue').value.trim(),
+    role:document.getElementById('m-role').value,
     partners:document.getElementById('m-partners').value.trim(),
-    observer:obs,
+    observer:obsVal,
+    rating:matchStatus==='managed'?currentRating:0,
     errors:allErr,
-    rating:matchStatus==='played'?currentRating:0,
     comment:document.getElementById('m-comment').value.trim(),
     keymom:document.getElementById('m-keymom').value.trim(),
     upcoming:matchStatus==='upcoming',
   };
 
-  matches.unshift(m);save();
-
-  // Show duplicate button for school matches
-  if(matchType==='okul'&&matchStatus==='played'){
-    document.getElementById('duplicate-btn').style.display='inline-flex';
+  if(editingId){
+    const idx=matches.findIndex(m=>m.id===editingId);
+    if(idx>=0)matches[idx]=obj;
+    showToast('✏️ Güncellendi!');
+  }else{
+    matches.unshift(obj);
+    if(matchType==='okul'&&matchStatus==='managed')document.getElementById('duplicate-btn').style.display='inline-flex';
+    showToast('✅ Kaydedildi!');
   }
 
-  updateHeaderStats();showToast('✅ Kaydedildi!');
+  save();updateHeaderStats();
+  if(editingId){cancelEdit();switchTab('matches',null);}
+  else resetFormPartial();
+}
 
-  if(matchStatus==='upcoming'){
-    // partial reset, keep venue/date/type for series entry
-    document.getElementById('m-date').value=today();
-  } else {
-    resetForm();
+function resetFormPartial(){
+  if(!editingId){
+    document.getElementById('m-home').value='';
+    document.getElementById('m-away').value='';
+    document.getElementById('m-score').value='';
+    document.getElementById('m-score-okul').value='';
+    document.getElementById('m-comment').value='';
+    document.getElementById('m-keymom').value='';
+    document.getElementById('m-custom-error').value='';
+    currentRating=0;selectedErrors=[];
+    document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
+    renderErrorTags();
   }
 }
 
-function resetForm(){
-  ['m-home','m-away','m-home-school','m-away-school','m-score','m-score-school',
-   'm-partners','m-comment','m-keymom','m-custom-error','m-observer-name','m-venue'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
-  document.getElementById('m-league').value='';
-  document.getElementById('m-role').value='';
-  document.getElementById('m-date').value=today();
+function cancelEdit(){
+  editingId=null;
+  document.getElementById('edit-id').value='';
+  document.getElementById('form-title').textContent='🏀 Yeni Maç Kaydı';
+  document.getElementById('cancel-edit-btn').style.display='none';
+  document.getElementById('duplicate-btn').style.display='none';
+  // Reset form fully
+  ['m-home','m-away','m-score','m-score-okul','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('m-league').value='';document.getElementById('m-role').value='';
   currentRating=0;selectedErrors=[];selectedCat='';
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
   renderErrorTags();
-  document.getElementById('duplicate-btn').style.display='none';
+  setStatus(document.getElementById('status-toggle').querySelector('.type-btn'),'managed');
+  setType(document.getElementById('type-toggle').querySelector('.type-btn'),'bolge');
+  setObs(document.getElementById('obs-toggle').querySelector('.type-btn'),'none');
+  initDateSelectors();
 }
 
-function duplicateLastSchool(){
-  // Find last school match and pre-fill form
-  const last=matches.find(m=>m.matchType==='okul');
-  if(!last)return;
-  // Reset scores and errors but keep category and venues
-  document.getElementById('m-home-school').value='';
-  document.getElementById('m-away-school').value='';
-  document.getElementById('m-score-school').value='';
-  document.getElementById('m-comment').value='';
-  document.getElementById('m-keymom').value='';
-  document.getElementById('m-custom-error').value='';
-  document.getElementById('m-venue').value=last.venue||'';
-  document.getElementById('m-date').value=today();
-  currentRating=0;selectedErrors=[];
-  document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
-  renderErrorTags();
-  // Re-select category
-  if(last.category){
-    selectedCat=last.category;
-    document.querySelectorAll('.cat-btn').forEach(b=>{if(b.textContent===last.category)b.classList.add('active');});
+function openEditForm(id){
+  const m=matches.find(x=>x.id===id);if(!m)return;
+  closeModal();
+  editingId=id;
+  document.getElementById('form-title').textContent='✏️ Maçı Düzenle';
+  document.getElementById('cancel-edit-btn').style.display='inline-flex';
+  document.getElementById('duplicate-btn').style.display='none';
+  setDateTimeFromString(m.date,m.time||'');
+  // Status
+  const statusBtn=m.upcoming?document.getElementById('status-toggle').querySelectorAll('.type-btn')[1]:document.getElementById('status-toggle').querySelectorAll('.type-btn')[0];
+  setStatus(statusBtn,m.upcoming?'upcoming':'managed');
+  // Type
+  const typeBtn=m.matchType==='okul'?document.getElementById('type-toggle').querySelectorAll('.type-btn')[1]:document.getElementById('type-toggle').querySelectorAll('.type-btn')[0];
+  setType(typeBtn,m.matchType||'bolge');
+  // Fields
+  document.getElementById('m-home').value=m.homeTeam||'';
+  document.getElementById('m-away').value=m.awayTeam||'';
+  document.getElementById('m-league').value=m.league||'';
+  document.getElementById('m-score').value=(m.matchType==='bolge')?m.score||'':'';
+  document.getElementById('m-score-okul').value=(m.matchType==='okul')?m.score||'':'';
+  document.getElementById('m-venue').value=m.venue||'';
+  document.getElementById('m-role').value=m.role||'';
+  document.getElementById('m-partners').value=m.partners||'';
+  document.getElementById('m-comment').value=m.comment||'';
+  document.getElementById('m-keymom').value=m.keymom||'';
+  // Category
+  if(m.matchType==='okul'&&m.category){
+    selectedCat=m.category;
+    document.querySelectorAll('.cat-btn').forEach(b=>{if(b.textContent===m.category)b.classList.add('active');});
   }
-  showToast('📋 Önceki maçtan kopyalandı. Takımları gir!');
+  // Observer
+  if(!m.observer||m.observer==='Yok'){
+    setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[0],'none');
+  }else if(m.observer.startsWith('Sözlü')){
+    setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[1],'verbal');
+    document.getElementById('m-obs-name').value=m.observer.replace('Sözlü — ','');
+  }else{
+    setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[2],'written');
+    document.getElementById('m-obs-name').value=m.observer.replace('Yazılı — ','');
+  }
+  // Stars & errors
+  if(!m.upcoming){
+    currentRating=m.rating||0;
+    document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<currentRating));
+    selectedErrors=[...(m.errors||[])];
+    renderErrorTags();
+  }
+  switchTab('add',null);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function duplicateSchool(){
+  const last=matches.find(m=>m.matchType==='okul');if(!last)return;
+  cancelEdit();
+  setType(document.getElementById('type-toggle').querySelectorAll('.type-btn')[1],'okul');
+  document.getElementById('m-venue').value=last.venue||'';
+  if(last.category){selectedCat=last.category;document.querySelectorAll('.cat-btn').forEach(b=>{if(b.textContent===last.category)b.classList.add('active');});}
+  showToast('📋 Çoğaltıldı. Takımları ve skoru gir!');
   switchTab('add',null);
 }
 
 // ============================================================
-// HEADER STATS
+// HELPERS
 // ============================================================
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const isFuture=m=>(m.upcoming===true)||(m.date>todayStr());
+const isPast=m=>!isFuture(m);
+const isOverdue=m=>m.upcoming===true&&m.date<todayStr(); // Yaklaşan ama tarihi geçmiş
+
 function updateHeaderStats(){
   const past=matches.filter(isPast);
   const now=new Date();
   const tm=past.filter(m=>m.date.slice(0,7)===now.toISOString().slice(0,7)).length;
   const avg=past.length?(past.reduce((s,m)=>s+m.rating,0)/past.length).toFixed(1):'—';
-  const upcoming=matches.filter(isFuture).length;
+  const upcoming=matches.filter(m=>m.upcoming&&!isOverdue(m)).length;
   document.getElementById('hstat-total').textContent=past.length;
   document.getElementById('hstat-month').textContent=tm;
   document.getElementById('hstat-avg').textContent=avg;
@@ -764,25 +1084,35 @@ function updateHeaderStats(){
 function renderDashboard(){
   updateHeaderStats();
   const past=matches.filter(isPast);
-  const upcoming=matches.filter(isFuture).sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming=matches.filter(m=>m.upcoming&&!isOverdue(m)).sort((a,b)=>a.date.localeCompare(b.date));
+  const overdue=matches.filter(isOverdue).sort((a,b)=>a.date.localeCompare(b.date));
+  const t=todayStr();
 
-  // Upcoming notices
+  // Overdue section
+  const odEl=document.getElementById('overdue-section');
+  if(overdue.length){
+    odEl.innerHTML=`<div class="section-title" style="color:var(--warn);">⏰ Değerlendirme Bekleyen Maçlar</div>`+
+      overdue.map(m=>`<div class="overdue-notice" onclick="openMatchDetail(${m.id})">
+        <div class="un-icon">⏰</div>
+        <div class="un-text"><strong>${m.name}</strong><br>${m.date}${m.time?' · '+m.time:''} — Yönettin mi? Değerlendirmeni ekle!</div>
+        <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openEditForm(${m.id})" style="flex-shrink:0;">✏️ Değerlendir</button>
+      </div>`).join('');
+  }else odEl.innerHTML='';
+
+  // Upcoming section
   const upEl=document.getElementById('upcoming-section');
   if(upcoming.length){
-    const t=today();
     upEl.innerHTML=`<div class="section-title">📅 Yaklaşan Görevler</div>`+
       upcoming.slice(0,3).map(m=>{
         const diff=Math.ceil((new Date(m.date)-new Date(t))/(1000*60*60*24));
-        const diffStr=diff===0?'Bugün!':diff===1?'Yarın':`${diff} gün sonra`;
-        return `<div class="upcoming-notice" onclick="openMatchDetail(${m.id})" style="cursor:pointer;">
+        const ds=diff===0?'Bugün!':diff===1?'Yarın':`${diff} gün sonra`;
+        return `<div class="upcoming-notice" onclick="openMatchDetail(${m.id})">
           <div class="un-icon">📍</div>
-          <div class="un-text"><strong>${m.name}</strong><br>${m.date} · ${m.venue||'—'} · ${m.role||'—'}</div>
-          <div class="un-days">${diffStr}</div>
+          <div class="un-text"><strong>${m.name}</strong><br>${m.date}${m.time?' · '+m.time:''} · ${m.venue||'—'} · ${m.role||'—'}</div>
+          <div class="un-days">${ds}</div>
         </div>`;
       }).join('');
-  } else {
-    upEl.innerHTML='';
-  }
+  }else upEl.innerHTML='';
 
   // Stats
   document.getElementById('sg-total').textContent=past.length;
@@ -790,81 +1120,70 @@ function renderDashboard(){
   document.getElementById('sg-errors').textContent=past.reduce((s,m)=>s+m.errors.length,0);
   document.getElementById('sg-year').textContent=past.filter(m=>m.date.startsWith(new Date().getFullYear())).length;
 
-  // Trend chart — last 8 played
   const last8=past.slice(0,8).reverse();
   const ctx=document.getElementById('trendChart').getContext('2d');
   if(trendChart)trendChart.destroy();
   if(last8.length){trendChart=new Chart(ctx,{type:'line',data:{
-    labels:last8.map(m=>m.date.slice(5)),
-    datasets:[{label:'Puan',data:last8.map(m=>m.rating),borderColor:'#f5a623',backgroundColor:'rgba(245,166,35,.08)',pointBackgroundColor:'#f5a623',pointRadius:4,tension:.4,fill:true}]
-  },options:{scales:{y:{min:0,max:10,grid:{color:'#1a1d24'},ticks:{color:'#555c6e'}},x:{grid:{display:false},ticks:{color:'#555c6e'}}},plugins:{legend:{display:false}},responsive:true}});}
+    labels:last8.map(m=>m.date.slice(5)+(m.time?` ${m.time}`:'')),
+    datasets:[{label:'Puan',data:last8.map(m=>m.rating),borderColor:'#f5a623',backgroundColor:'rgba(245,166,35,.07)',pointBackgroundColor:'#f5a623',pointRadius:4,tension:.4,fill:true}]
+  },options:{scales:{y:{min:0,max:10,grid:{color:'#1a1d24'},ticks:{color:'#555c6e'}},x:{grid:{display:false},ticks:{color:'#555c6e',maxTicksLimit:6}}},plugins:{legend:{display:false}},responsive:true}});}
 
-  // Top errors
   const eMap={};past.forEach(m=>m.errors.forEach(e=>{eMap[e]=(eMap[e]||0)+1;}));
-  const sorted=Object.entries(eMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const mx=sorted[0]?.[1]||1;
+  const sorted=Object.entries(eMap).sort((a,b)=>b[1]-a[1]).slice(0,5);const mx=sorted[0]?.[1]||1;
   document.getElementById('top-errors-list').innerHTML=sorted.length?
     sorted.map(([n,c])=>`<div class="progress-row"><div class="progress-label"><span>${n}</span><span>${c}x</span></div><div class="progress-track"><div class="progress-fill" style="width:${(c/mx)*100}%"></div></div></div>`).join(''):
     '<div class="empty-state"><div class="empty-icon">🎉</div><p>Hata kaydedilmedi.</p></div>';
 
-  // Recent played
   document.getElementById('recent-matches').innerHTML=past.slice(0,3).map(m=>matchCardHTML(m)).join('')||
-    '<div class="empty-state"><div class="empty-icon">🏀</div><p>Henüz oynanan maç yok.</p></div>';
+    '<div class="empty-state"><div class="empty-icon">🏀</div><p>Henüz yönetilen maç yok.</p></div>';
 }
 
 // ============================================================
-// MATCHES LIST
+// MATCHES
 // ============================================================
 function renderMatches(){
   const search=(document.getElementById('search-input')?.value||'').toLowerCase();
   const ftype=document.getElementById('filter-type')?.value||'';
   const sort=document.getElementById('sort-select')?.value||'date-desc';
-
   let list=[...matches];
-  if(search)list=list.filter(m=>m.name.toLowerCase().includes(search)||(m.venue||'').toLowerCase().includes(search));
+  if(search)list=list.filter(m=>(m.name||'').toLowerCase().includes(search)||(m.venue||'').toLowerCase().includes(search));
   if(ftype)list=list.filter(m=>m.matchType===ftype);
   if(sort==='date-desc')list.sort((a,b)=>b.date.localeCompare(a.date));
   if(sort==='date-asc')list.sort((a,b)=>a.date.localeCompare(b.date));
   if(sort==='rating-desc')list.sort((a,b)=>b.rating-a.rating);
   if(sort==='rating-asc')list.sort((a,b)=>a.rating-b.rating);
-
-  // Separate upcoming and past
-  const upcoming=list.filter(isFuture).sort((a,b)=>a.date.localeCompare(b.date));
+  const overdue=list.filter(isOverdue).sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming=list.filter(m=>m.upcoming&&!isOverdue(m)).sort((a,b)=>a.date.localeCompare(b.date));
   const past=list.filter(isPast);
-
   let html='';
-  if(upcoming.length){
-    html+=`<div class="section-title" style="margin-top:4px;">📅 Yaklaşan Görevler</div>`;
-    html+=upcoming.map(m=>matchCardHTML(m)).join('');
-    if(past.length)html+=`<div class="section-title" style="margin-top:12px;">✅ Oynanan Maçlar</div>`;
-  }
-  html+=past.map(m=>matchCardHTML(m)).join('');
+  if(overdue.length){html+=`<div class="section-title" style="color:var(--warn);">⏰ Değerlendirme Bekliyor</div>`;html+=overdue.map(m=>matchCardHTML(m)).join('');}
+  if(upcoming.length){html+=`<div class="section-title" style="margin-top:${overdue.length?'10px':'0'};">📅 Yaklaşan</div>`;html+=upcoming.map(m=>matchCardHTML(m)).join('');}
+  if(past.length){html+=(upcoming.length||overdue.length?`<div class="section-title" style="margin-top:10px;">✅ Yönetilen</div>`:'');html+=past.map(m=>matchCardHTML(m)).join('');}
   document.getElementById('matches-list').innerHTML=html||'<div class="empty-state"><div class="empty-icon">📭</div><p>Maç bulunamadı.</p></div>';
 }
 
 function matchCardHTML(m){
   const d=new Date(m.date+'T00:00:00');
-  const fut=isFuture(m);
-  const rc=fut?'':m.rating>=7?'rating-good':m.rating>=5?'rating-ok':'rating-bad';
-  const typeBadge=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">🏆 ${m.league||'Bölge'}</span>`;
+  const fut=isFuture(m),od=isOverdue(m);
+  const rc=fut?'':(m.rating>=7?'rating-good':m.rating>=5?'rating-ok':'rating-bad');
+  const typeBadge=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">${m.league||'Bölge'}</span>`;
   return `<div class="match-card${fut?' future-card':''}" onclick="openMatchDetail(${m.id})">
-    <div class="match-date-badge${fut?' future-badge':''}">
+    <div class="match-date-badge${fut?' future-badge-date':''}">
       <div class="match-date-day">${d.getDate()}</div>
       <div class="match-date-mon">${d.toLocaleString('tr-TR',{month:'short'}).toUpperCase()}</div>
     </div>
     <div class="match-info">
-      <h3>${m.name}</h3>
+      <h3>${m.name||'Maç'}</h3>
       <div class="match-meta">
         ${typeBadge}
         ${m.role?`<span>👤 ${m.role}</span>`:''}
+        ${m.time?`<span>🕐 ${m.time}</span>`:''}
         ${m.venue?`<span>📍 ${m.venue}</span>`:''}
-        ${!fut&&m.errors.length?`<span>⚠️ ${m.errors.length} hata</span>`:''}
-        ${fut?`<span class="future-badge-pill">📅 Yaklaşan</span>`:''}
+        ${!fut&&m.errors&&m.errors.length?`<span>⚠️ ${m.errors.length} hata</span>`:''}
+        ${od?`<span class="future-pill" style="border-color:var(--warn);color:var(--warn);">⏰ Değerlendir</span>`:fut?`<span class="future-pill">📅 Yaklaşan</span>`:''}
       </div>
     </div>
-    <div>
-      ${fut?'<span style="font-size:18px;">📍</span>':`<div class="rating-circle ${rc}">${m.rating}</div>`}
-    </div>
+    <div>${fut?`<span style="font-size:16px;">${od?'⏰':'📍'}</span>`:`<div class="rating-circle ${rc}">${m.rating}</div>`}</div>
   </div>`;
 }
 
@@ -873,50 +1192,36 @@ function matchCardHTML(m){
 // ============================================================
 function openMatchDetail(id){
   const m=matches.find(x=>x.id===id);if(!m)return;
-  const fut=isFuture(m);
-  const rc=fut?'':m.rating>=7?'rating-good':m.rating>=5?'rating-ok':'rating-bad';
-  const typeBadge=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">🏆 ${m.league||'Bölge'}</span>`;
+  const fut=isFuture(m),od=isOverdue(m);
+  const rc=fut?'':(m.rating>=7?'rating-good':m.rating>=5?'rating-ok':'rating-bad');
   document.getElementById('modal-content').innerHTML=`
     <div class="modal-header">
-      <div class="modal-title">${fut?'📅 Yaklaşan Görev':'📋 Maç Detayı'}</div>
+      <div class="modal-title">${od?'⏰ Değerlendirme Bekliyor':fut?'📅 Yaklaşan Görev':'📋 Maç Detayı'}</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:11px;flex-wrap:wrap;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:9px;margin-bottom:10px;flex-wrap:wrap;">
       <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;">${m.name}</div>
-        <div style="color:var(--text3);font-size:11px;margin-top:2px;">${m.date} · ${m.role||'—'}</div>
-        <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;">
-          ${typeBadge}
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;">${m.name||'Maç'}</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:2px;">${m.date}${m.time?' · '+m.time:''} · ${m.role||'—'}</div>
+        <div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap;">
+          ${m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">${m.league||'Bölge'}</span>`}
           ${m.role?`<span class="badge badge-role">${m.role}</span>`:''}
-          ${fut?`<span class="badge" style="background:rgba(61,184,160,.15);color:var(--accent3);">📅 Yaklaşan</span>`:''}
         </div>
       </div>
-      ${!fut?`<div class="rating-circle ${rc}" style="width:44px;height:44px;font-size:17px;flex-shrink:0;">${m.rating}/10</div>`:''}
+      ${!fut?`<div class="rating-circle ${rc}" style="width:40px;height:40px;font-size:15px;flex-shrink:0;">${m.rating}/10</div>`:''}
     </div>
-    ${m.score?`<p style="font-size:12px;color:var(--text2);margin-bottom:8px;">📊 Skor: <strong>${m.score}</strong></p>`:''}
-    ${m.venue?`<p style="font-size:11px;color:var(--text3);margin-bottom:8px;">📍 ${m.venue}${m.partners?' · 🤝 '+m.partners:''}</p>`:''}
-    ${m.observer&&m.observer!=='Yok'?`<p style="font-size:11px;color:var(--text3);margin-bottom:8px;">👁️ Gözlemci: ${m.observer}</p>`:''}
-    ${m.errors&&m.errors.length?`<div style="margin-bottom:11px;"><div class="section-title" style="font-size:11px;">⚠️ Hatalar (${m.errors.length})</div>${m.errors.map(e=>`<div class="error-list-item">${e}</div>`).join('')}</div>`:''}
-    ${m.comment?`<div style="margin-bottom:11px;"><div class="section-title" style="font-size:11px;">💬 Yorum</div><div class="note-block">${m.comment}</div></div>`:''}
-    ${m.keymom?`<div style="margin-bottom:11px;"><div class="section-title" style="font-size:11px;">📌 Kritik An</div><div class="note-block" style="border-left-color:var(--warn)">${m.keymom}</div></div>`:''}
+    ${m.score?`<p style="font-size:11px;color:var(--text2);margin-bottom:7px;">📊 Skor: <strong>${m.score}</strong></p>`:''}
+    ${m.venue?`<p style="font-size:10px;color:var(--text3);margin-bottom:7px;">📍 ${m.venue}${m.partners?' · 🤝 '+m.partners:''}</p>`:''}
+    ${m.observer&&m.observer!=='Yok'?`<p style="font-size:10px;color:var(--text3);margin-bottom:7px;">👁️ Gözlemci: ${m.observer}</p>`:''}
+    ${m.errors&&m.errors.length?`<div style="margin-bottom:10px;"><div class="section-title" style="font-size:10px;">⚠️ Hatalar (${m.errors.length})</div>${m.errors.map(e=>`<div class="error-list-item">${e}</div>`).join('')}</div>`:''}
+    ${m.comment?`<div style="margin-bottom:10px;"><div class="section-title" style="font-size:10px;">💬 Yorum</div><div class="note-block">${m.comment}</div></div>`:''}
+    ${m.keymom?`<div style="margin-bottom:10px;"><div class="section-title" style="font-size:10px;">📌 Kritik An</div><div class="note-block" style="border-left-color:var(--warn)">${m.keymom}</div></div>`:''}
     <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
-      ${fut?`<button class="btn btn-teal btn-sm" onclick="markPlayed(${m.id})">✅ Oynandı Olarak İşaretle</button>`:''}
+      <button class="btn btn-warn btn-sm" onclick="openEditForm(${m.id})">✏️ Düzenle</button>
       <button class="btn btn-ghost btn-sm" onclick="closeModal()">Kapat</button>
       <button class="btn btn-danger btn-sm" onclick="deleteMatch(${m.id})">🗑️ Sil</button>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
-}
-
-function markPlayed(id){
-  // Opens add tab pre-filled to complete the match
-  const m=matches.find(x=>x.id===id);if(!m)return;
-  closeModal();
-  // Remove upcoming flag and open the edit flow via add tab
-  m.upcoming=false;
-  // Set status to played and switch to add with pre-filled data would be complex; 
-  // simpler: just mark upcoming=false, prompt user to add rating
-  save();updateHeaderStats();renderDashboard();
-  showToast('✅ Maç oynandı olarak işaretlendi. Puanını ve notlarını eklemek için maça tıkla.');
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
@@ -933,22 +1238,21 @@ function renderCalendar(){
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const offset=firstDay===0?6:firstDay-1;
   const dim=new Date(calYear,calMonth+1,0).getDate();
-  const todayStr=today();
-  const mByDate={};
-  matches.forEach(m=>{if(!mByDate[m.date])mByDate[m.date]=[];mByDate[m.date].push(m);});
+  const t=todayStr();
+  const mByDate={};matches.forEach(m=>{if(!mByDate[m.date])mByDate[m.date]=[];mByDate[m.date].push(m);});
   for(let i=0;i<offset;i++)html+=`<div class="cal-cell empty"></div>`;
   for(let d=1;d<=dim;d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dm=mByDate[ds]||[];
-    const isToday=ds===todayStr;
+    const isToday=ds===t;
     const hasFut=dm.some(isFuture),hasPast=dm.some(isPast);
     const dots=dm.map(m=>{
-      if(isFuture(m))return `<span class="cal-dot cal-dot-future" title="${m.name}">📍</span>`;
+      if(isFuture(m))return `<span class="cal-dot" style="border:1px solid var(--accent3);color:var(--accent3);font-size:7px;" title="${m.name||''}">${isOverdue(m)?'⏰':'📍'}</span>`;
       const col=m.rating>=7?'var(--good)':m.rating>=5?'var(--warn)':'var(--bad)';
-      return `<span class="cal-dot" style="background:${col};color:#000;" title="${m.name}">${m.rating}</span>`;
+      return `<span class="cal-dot" style="background:${col};color:#000;" title="${m.name||''}">${m.rating}</span>`;
     }).join('');
-    const cls=['cal-cell',dm.length?hasPast?'has-match':'has-future':'',isToday?'today':''].filter(Boolean).join(' ');
-    html+=`<div class="${cls}" ${dm.length?`onclick="calDay('${ds}')"`:''}><div class="cal-date-num">${d}</div>${dots}</div>`;
+    const cls=['cal-cell',dm.length?(hasPast?'has-match':'has-future'):'',isToday?'today':''].filter(Boolean).join(' ');
+    html+=`<div class="${cls}"${dm.length?` onclick="calDay('${ds}')"`:''}><div class="cal-date-num">${d}</div>${dots}</div>`;
   }
   document.getElementById('cal-grid').innerHTML=html;
 }
@@ -966,8 +1270,7 @@ function calDay(ds){
 function renderAnalysis(){
   const past=matches.filter(isPast);
   const eMap={};past.forEach(m=>m.errors.forEach(e=>{eMap[e]=(eMap[e]||0)+1;}));
-  const sorted=Object.entries(eMap).sort((a,b)=>b[1]-a[1]);
-  const mx=sorted[0]?.[1]||1;
+  const sorted=Object.entries(eMap).sort((a,b)=>b[1]-a[1]);const mx=sorted[0]?.[1]||1;
   document.getElementById('error-analysis').innerHTML=sorted.length?
     sorted.map(([n,c])=>{const pct=Math.round((c/past.length)*100);return `<div class="progress-row"><div class="progress-label"><span>${n}</span><span>${c} maçta · %${pct}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(c/mx)*100}%;${c/mx>.7?'background:linear-gradient(90deg,var(--bad),#f04a2a)':''}"></div></div></div>`;}).join(''):
     '<div class="empty-state"><div class="empty-icon">📊</div><p>Maç ekledikçe belirir.</p></div>';
@@ -976,117 +1279,89 @@ function renderAnalysis(){
   if(progressChart)progressChart.destroy();
   if(all.length){progressChart=new Chart(ctx,{type:'bar',data:{
     labels:all.map((m,i)=>`M${i+1}`),
-    datasets:[{label:'Puan',data:all.map(m=>m.rating),backgroundColor:all.map(m=>m.rating>=7?'rgba(61,184,160,.7)':m.rating>=5?'rgba(245,166,35,.7)':'rgba(232,57,29,.7)'),borderRadius:4}]
+    datasets:[{label:'Puan',data:all.map(m=>m.rating),backgroundColor:all.map(m=>m.rating>=7?'rgba(61,184,160,.7)':m.rating>=5?'rgba(245,166,35,.7)':'rgba(232,57,29,.7)'),borderRadius:3}]
   },options:{scales:{y:{min:0,max:10,grid:{color:'#1a1d24'},ticks:{color:'#555c6e'}},x:{grid:{display:false},ticks:{color:'#555c6e'}}},plugins:{legend:{display:false}},responsive:true}});}
   const wc=past.filter(m=>m.comment);
   document.getElementById('comment-timeline').innerHTML=wc.length?
-    `<div class="timeline">${wc.map(m=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">${m.date} — ${m.name} <span style="color:var(--accent)">(${m.rating}/10)</span></div><div class="timeline-content">${m.comment}</div></div>`).join('')}</div>`:
+    `<div class="timeline">${wc.map(m=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-date">${m.date}${m.time?' · '+m.time:''} — ${m.name||'Maç'} <span style="color:var(--accent)">(${m.rating}/10)</span></div><div class="timeline-content">${m.comment}</div></div>`).join('')}</div>`:
     '<div class="empty-state"><div class="empty-icon">📝</div><p>Henüz yorum yok.</p></div>';
 }
 
 // ============================================================
 // GOALS
 // ============================================================
-function addGoal(){const t=document.getElementById('goal-text').value.trim();if(!t){showToast('⚠️ Hedef metni gir!');return;}goals.unshift({id:Date.now(),text:t,cat:document.getElementById('goal-cat').value,done:false});save();document.getElementById('goal-text').value='';renderGoals();showToast('🎯 Hedef eklendi!');}
+function addGoal(){const t=document.getElementById('goal-text').value.trim();if(!t){showToast('⚠️ Hedef gir!');return;}goals.unshift({id:Date.now(),text:t,cat:document.getElementById('goal-cat').value,done:false});save();document.getElementById('goal-text').value='';renderGoals();showToast('🎯 Hedef eklendi!');}
 function toggleGoal(id){const g=goals.find(x=>x.id===id);if(g)g.done=!g.done;save();renderGoals();}
 function deleteGoal(id){goals=goals.filter(g=>g.id!==id);save();renderGoals();}
 function renderGoals(){
   const el=document.getElementById('goals-list');
-  if(!goals.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><p>Henüz hedef eklenmedi.</p></div>';return;}
-  const rg=list=>list.map(g=>`<div class="goal-item ${g.done?'done':''}"><div class="goal-checkbox" onclick="toggleGoal(${g.id})">${g.done?'✓':''}</div><div class="goal-text"><span style="font-size:9px;color:var(--text3);display:block;margin-bottom:1px;">${g.cat}</span>${g.text}</div><button class="btn btn-ghost btn-sm" onclick="deleteGoal(${g.id})" style="padding:3px 6px;font-size:13px;color:var(--text3);">✕</button></div>`).join('');
+  if(!goals.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><p>Henüz hedef yok.</p></div>';return;}
+  const rg=list=>list.map(g=>`<div class="goal-item ${g.done?'done':''}"><div class="goal-checkbox" onclick="toggleGoal(${g.id})">${g.done?'✓':''}</div><div class="goal-text"><span style="font-size:9px;color:var(--text3);display:block;">${g.cat}</span>${g.text}</div><button class="btn btn-ghost btn-sm" onclick="deleteGoal(${g.id})" style="padding:3px 6px;font-size:12px;color:var(--text3);">✕</button></div>`).join('');
   const open=goals.filter(g=>!g.done),done=goals.filter(g=>g.done);
-  el.innerHTML=rg(open)+(done.length?`<div class="section-title" style="margin-top:14px;font-size:11px;">✅ Tamamlananlar</div>`+rg(done):'');
+  el.innerHTML=rg(open)+(done.length?`<div class="section-title" style="margin-top:13px;font-size:10px;">✅ Tamamlananlar</div>`+rg(done):'');
 }
 
 // ============================================================
-// QUIZ — PDF
+// QUIZ
 // ============================================================
-function handleDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('drag-over');}
-function handleDragLeave(){document.getElementById('upload-zone').classList.remove('drag-over');}
-function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')loadPdf(f);}
-function handleFileSelect(e){const f=e.target.files[0];if(f)loadPdf(f);}
-function loadPdf(file){const reader=new FileReader();reader.onload=e=>{window._pdfBase64=e.target.result.split(',')[1];document.getElementById('pdf-name').textContent=file.name;document.getElementById('pdf-loaded-info').style.display='block';showToast('✅ PDF yüklendi!');};reader.readAsDataURL(file);}
+function setQuizDiff(btn,d){quizDiff=d;document.querySelectorAll('.q-diff-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 
-// ============================================================
-// QUIZ — LOGIC
-// ============================================================
-function setDiff(btn,d){quizDiff=d;document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
-
-async function startQuiz(){
-  const apiKey=(document.getElementById('api-key-input').value||'').trim();
-  if(!apiKey){showToast('⚠️ Önce API anahtarını gir!');return;}
-  if(!window._pdfBase64){showToast("⚠️ Önce kural kitabı PDF'ini yükle!");return;}
-  const count=parseInt(document.getElementById('q-count').value);
-  const topic=document.getElementById('q-topic').value;
-  document.getElementById('quiz-setup').style.display='none';
-  document.getElementById('quiz-generating').style.display='block';
-  document.getElementById('gen-status').textContent='AI sorular hazırlıyor...';
-  const dd={kolay:'temel kavramlara dayalı, açık uçlu',orta:'yoruma gerektiren, orta zorlukta',zor:'ince ayrıntılar ve karmaşık senaryolara dayalı zor'};
-  const prompt=`TBF lisanslı deneyimli bir basketbol hakemliği eğitmenisin. Bu TBF Basketbol Oyun Kuralları 2024 belgesinden ${count} adet ${dd[quizDiff]} quiz sorusu oluştur.
-Konu: ${topic}
-SADECE geçerli JSON dizisi döndür (başka metin yok):
-[{"type":"mcq","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":0,"explanation":"... Madde X.X"},{"type":"tf","question":"...","answer":true,"explanation":"... Madde X.X"}]
-Kurallar: Türkçe, hakem bakış açısıyla pratik senaryolar, her açıklamada madde numarası.`;
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:4000,messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:window._pdfBase64}},{type:'text',text:prompt}]}]})});
-    if(!resp.ok){const err=await resp.json();throw new Error(err.error?.message||'API hatası '+resp.status);}
-    const data=await resp.json();
-    const text=data.content.map(i=>i.text||'').join('');
-    questions=JSON.parse(text.replace(/```json|```/g,'').trim());
-    document.getElementById('quiz-generating').style.display='none';
-    document.getElementById('quiz-active').style.display='block';
-    qIndex=0;qCorrect=0;renderQuestion();
-  }catch(err){
-    document.getElementById('quiz-generating').style.display='none';
-    document.getElementById('quiz-setup').style.display='block';
-    showToast('❌ Hata: '+err.message);console.error(err);
-  }
+function startQuiz(){
+  qList=[...QUIZ_QUESTIONS[quizDiff]];
+  // Shuffle
+  for(let i=qList.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qList[i],qList[j]]=[qList[j],qList[i]];}
+  qIdx=0;qCorrect=0;qAnswered=false;
+  document.getElementById('quiz-setup-view').style.display='none';
+  document.getElementById('quiz-active-view').style.display='block';
+  document.getElementById('quiz-result-view').style.display='none';
+  renderQ();
 }
-function renderQuestion(){
-  const q=questions[qIndex];qAnswered=false;
-  document.getElementById('next-btn').style.display='none';
-  document.getElementById('quiz-progress-label').textContent=`Soru ${qIndex+1} / ${questions.length}`;
-  let html=`<div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${(qIndex/questions.length)*100}%"></div></div>`;
-  html+=`<div class="quiz-q-num">SORU ${qIndex+1} — ${quizDiff.toUpperCase()}</div><div class="quiz-question">${q.question}</div>`;
+function renderQ(){
+  const q=qList[qIdx];qAnswered=false;
+  document.getElementById('quiz-next-btn').style.display='none';
+  document.getElementById('quiz-prog-lbl').textContent=`Soru ${qIdx+1} / ${qList.length} — ${quizDiff.toUpperCase()}`;
+  let html=`<div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${(qIdx/qList.length)*100}%"></div></div>`;
+  html+=`<div class="quiz-q-num">SORU ${qIdx+1}</div><div class="quiz-question">${q.question}</div>`;
   if(q.type==='tf'){
     html+=`<div class="quiz-tf-btns"><button class="quiz-tf-btn" onclick="answerTF(this,true)">✅ DOĞRU</button><button class="quiz-tf-btn" onclick="answerTF(this,false)">❌ YANLIŞ</button></div>`;
   }else{
     html+=`<div class="quiz-options">${(q.options||[]).map((o,i)=>`<button class="quiz-option" onclick="answerMCQ(this,${i})">${o}</button>`).join('')}</div>`;
   }
-  html+=`<div class="quiz-explanation" id="q-explanation" style="display:none;">${q.explanation||''}</div>`;
+  html+=`<div class="quiz-explanation" id="q-exp" style="display:none;">${q.explanation||''}</div>`;
   document.getElementById('quiz-card').innerHTML=html;
 }
-function answerMCQ(btn,idx){if(qAnswered)return;qAnswered=true;const q=questions[qIndex];if(idx===q.answer)qCorrect++;document.querySelectorAll('.quiz-option').forEach((b,i)=>{b.classList.add('answered');if(i===q.answer)b.classList.add('correct');else if(i===idx&&idx!==q.answer)b.classList.add('wrong');});document.getElementById('q-explanation').style.display='block';document.getElementById('next-btn').style.display='inline-flex';}
-function answerTF(btn,val){if(qAnswered)return;qAnswered=true;const q=questions[qIndex];if(val===q.answer)qCorrect++;document.querySelectorAll('.quiz-tf-btn').forEach(b=>{b.classList.add('answered');const bv=b.textContent.includes('DOĞRU');if(bv===q.answer)b.classList.add('correct');else if(bv===val&&val!==q.answer)b.classList.add('wrong');});document.getElementById('q-explanation').style.display='block';document.getElementById('next-btn').style.display='inline-flex';}
-function nextQuestion(){qIndex++;if(qIndex>=questions.length){showResult();return;}renderQuestion();}
+function answerMCQ(btn,idx){if(qAnswered)return;qAnswered=true;const q=qList[qIdx];if(idx===q.answer)qCorrect++;document.querySelectorAll('.quiz-option').forEach((b,i)=>{b.classList.add('answered');if(i===q.answer)b.classList.add('correct');else if(i===idx&&idx!==q.answer)b.classList.add('wrong');});document.getElementById('q-exp').style.display='block';document.getElementById('quiz-next-btn').style.display='inline-flex';}
+function answerTF(btn,val){if(qAnswered)return;qAnswered=true;const q=qList[qIdx];if(val===q.answer)qCorrect++;document.querySelectorAll('.quiz-tf-btn').forEach(b=>{b.classList.add('answered');const bv=b.textContent.includes('DOĞRU');if(bv===q.answer)b.classList.add('correct');else if(bv===val&&val!==q.answer)b.classList.add('wrong');});document.getElementById('q-exp').style.display='block';document.getElementById('quiz-next-btn').style.display='inline-flex';}
+function nextQ(){qIdx++;if(qIdx>=qList.length){showResult();return;}renderQ();}
 function showResult(){
-  document.getElementById('quiz-active').style.display='none';
-  document.getElementById('quiz-result').style.display='block';
-  const pct=Math.round((qCorrect/questions.length)*100);
-  document.getElementById('result-score').textContent=qCorrect+'/'+questions.length;
-  document.getElementById('result-correct').textContent=qCorrect;
-  document.getElementById('result-wrong').textContent=questions.length-qCorrect;
-  document.getElementById('result-pct').textContent=pct+'%';
-  const msgs=[[90,'🔥 Mükemmel! Kural bilgin çok güçlü.'],[70,'👍 İyi iş! Biraz daha pratik yeterli.'],[50,'📖 Gelişme var. Kural kitabını tekrar incele.'],[0,'💪 Daha fazla çalışma gerekiyor!']];
-  document.getElementById('result-msg').textContent=msgs.find(([t])=>pct>=t)[1];
-  document.getElementById('result-review').innerHTML=`<div class="section-title">📖 Tüm Açıklamalar</div>`+questions.map((q,i)=>`<div class="card" style="margin-bottom:6px;"><div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Soru ${i+1}</div><div style="font-size:12px;font-weight:600;margin-bottom:5px;">${q.question}</div><div style="font-size:11px;color:var(--accent3);">${q.explanation||''}</div></div>`).join('');
-  quizHist.unshift({date:today(),score:qCorrect,total:questions.length,pct,diff:quizDiff});
+  document.getElementById('quiz-active-view').style.display='none';
+  document.getElementById('quiz-result-view').style.display='block';
+  const pct=Math.round((qCorrect/qList.length)*100);
+  document.getElementById('r-score').textContent=`${qCorrect}/${qList.length}`;
+  document.getElementById('r-correct').textContent=qCorrect;
+  document.getElementById('r-wrong').textContent=qList.length-qCorrect;
+  document.getElementById('r-pct').textContent=pct+'%';
+  const msgs=[[90,'🔥 Mükemmel!'],[70,'👍 Çok iyi!'],[50,'📖 Gelişme var.'],[0,'💪 Daha çalışmak gerekiyor!']];
+  document.getElementById('r-msg').textContent=msgs.find(([t])=>pct>=t)[1];
+  document.getElementById('r-review').innerHTML=`<div class="section-title">📖 Açıklamalar</div>`+
+    qList.map((q,i)=>`<div class="card" style="margin-bottom:5px;"><div style="font-size:9px;color:var(--text3);">Soru ${i+1}</div><div style="font-size:11px;font-weight:600;margin:3px 0;">${q.question}</div><div style="font-size:10px;color:var(--accent3);">${q.explanation||''}</div></div>`).join('');
+  quizHist.unshift({date:todayStr(),score:qCorrect,total:qList.length,pct,diff:quizDiff});
   save();
 }
-function endQuiz(){document.getElementById('quiz-active').style.display='none';document.getElementById('quiz-setup').style.display='block';renderQuizHistory();}
-function resetQuiz(){document.getElementById('quiz-result').style.display='none';document.getElementById('quiz-setup').style.display='block';renderQuizHistory();}
+function endQuiz(){document.getElementById('quiz-active-view').style.display='none';document.getElementById('quiz-setup-view').style.display='block';renderQuizHistory();}
+function resetQuiz(){document.getElementById('quiz-result-view').style.display='none';document.getElementById('quiz-setup-view').style.display='block';renderQuizHistory();}
 function renderQuizHistory(){
   const sec=document.getElementById('quiz-history-section');
   const list=document.getElementById('quiz-history-list');
   if(!quizHist.length){sec.style.display='none';return;}
   sec.style.display='block';
-  list.innerHTML=quizHist.slice(0,8).map(h=>{const col=h.pct>=80?'var(--good)':h.pct>=60?'var(--warn)':'var(--bad)';return `<div class="card" style="padding:8px 11px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:var(--text2);">${h.date} <span style="color:var(--text3)">· ${h.diff}</span></div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:${col};">${h.score}/${h.total} (${h.pct}%)</div></div>`;}).join('');
+  list.innerHTML=quizHist.slice(0,8).map(h=>{const col=h.pct>=80?'var(--good)':h.pct>=60?'var(--warn)':'var(--bad)';return `<div class="card" style="padding:7px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:10px;color:var(--text2);">${h.date} <span style="color:var(--text3)">· ${h.diff}</span></div><div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:${col};">${h.score}/${h.total} (${h.pct}%)</div></div>`;}).join('');
 }
 
 // ============================================================
 // TOAST
 // ============================================================
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 </script>
 </body>
 </html>
