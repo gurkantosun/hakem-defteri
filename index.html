@@ -299,34 +299,14 @@ hr{border:none;border-top:1px solid var(--border);margin:11px 0;}
 
     <!-- Tarih & Saat -->
     <label>📅 Tarih ve Saat</label>
-    <div class="datetime-row">
+    <div class="form-row">
       <div>
-        <label style="font-size:9px;">Gün</label>
-        <select id="m-day" autocomplete="off"></select>
-      </div>
-      <div>
-        <label style="font-size:9px;">Ay</label>
-        <select id="m-month" autocomplete="off">
-          <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
-          <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
-          <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
-          <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
-        </select>
-      </div>
-      <div>
-        <label style="font-size:9px;">Yıl</label>
-        <select id="m-year" autocomplete="off"></select>
+        <label style="font-size:9px;">Tarih</label>
+        <input type="date" id="m-date" autocomplete="off">
       </div>
       <div>
         <label style="font-size:9px;">Saat</label>
-        <select id="m-hour" autocomplete="off"></select>
-      </div>
-      <div>
-        <label style="font-size:9px;">Dakika</label>
-        <select id="m-minute" autocomplete="off">
-          <option value="00">00</option><option value="15">15</option>
-          <option value="30">30</option><option value="45">45</option>
-        </select>
+        <input type="time" id="m-time" autocomplete="off">
       </div>
     </div>
 
@@ -784,21 +764,31 @@ let quizDiff='kolay', qList=[], qIdx=0, qCorrect=0, qAnswered=false;
 // ============================================================
 // DATE / TIME SELECTORS INIT
 // ============================================================
+// Eski initDateSelectors ve setNowDateTime fonksiyonlarını silip bunları yapıştır:
 function initDateSelectors(){
-  const dayEl=document.getElementById('m-day');
-  for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=String(i).padStart(2,'0');o.textContent=i;dayEl.appendChild(o);}
-  const yearEl=document.getElementById('m-year');
-  const cy=new Date().getFullYear();
-  for(let y=cy-3;y<=cy+2;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===cy)o.selected=true;yearEl.appendChild(o);}
-  const hourEl=document.getElementById('m-hour');
-  for(let h=0;h<24;h++){const o=document.createElement('option');o.value=String(h).padStart(2,'0');o.textContent=String(h).padStart(2,'0');hourEl.appendChild(o);}
-  // Set current date/time defaults
-  const now=new Date();
-  document.getElementById('m-day').value=String(now.getDate()).padStart(2,'0');
-  document.getElementById('m-month').value=now.getMonth()+1;
-  document.getElementById('m-year').value=now.getFullYear();
-  document.getElementById('m-hour').value=String(now.getHours()).padStart(2,'0');
-  document.getElementById('m-minute').value=now.getMinutes()<15?'00':now.getMinutes()<30?'15':now.getMinutes()<45?'30':'45';
+  setNowDateTime();
+}
+
+function setNowDateTime(){
+  const now = new Date();
+  const tzoffset = now.getTimezoneOffset() * 60000;
+  const localISOTime = new Date(Date.now() - tzoffset).toISOString().slice(0, 16);
+  document.getElementById('m-date').value = localISOTime.split('T')[0];
+  document.getElementById('m-time').value = localISOTime.split('T')[1];
+}
+
+// Eski getDateStr, getTimeStr ve setDT fonksiyonlarını silip bunları yapıştır:
+function getDateStr(){
+  return document.getElementById('m-date').value;
+}
+
+function getTimeStr(){
+  return document.getElementById('m-time').value;
+}
+
+function setDT(dateStr, timeStr){
+  if(dateStr) document.getElementById('m-date').value = dateStr;
+  if(timeStr) document.getElementById('m-time').value = timeStr;
 }
 
 function getDateString(){
