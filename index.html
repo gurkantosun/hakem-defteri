@@ -339,6 +339,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 <div id="loading-overlay">
   <span class="loading-ball">🏀</span>
   <span class="loading-text">Yükleniyor...</span>
+  <span class="loading-text" id="loading-slow" style="display:none;font-size:11px;color:#555c6e;margin-top:4px;">Bağlantı yavaş, lütfen bekleyin...</span>
 </div>
 
 <!-- ══ AUTH ═════════════════════════════════════════════════ -->
@@ -409,6 +410,9 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
       <div class="hstat"><div class="hstat-val" id="hstat-month">0</div><div class="hstat-lbl">Bu Ay</div></div>
       <div class="hstat"><div class="hstat-val" id="hstat-avg">—</div><div class="hstat-lbl">Ort.</div></div>
       <div class="hstat"><div class="hstat-val" id="hstat-up">0</div><div class="hstat-lbl">Yaklaşan</div></div>
+      <div class="hstat"><div class="hstat-val" id="hstat-bolge">0</div><div class="hstat-lbl">Bölge</div></div>
+      <div class="hstat"><div class="hstat-val" id="hstat-ozellig">0</div><div class="hstat-lbl">Özel Lig</div></div>
+      <div class="hstat"><div class="hstat-val" id="hstat-okul">0</div><div class="hstat-lbl">Okul</div></div>
     </div>
     <div class="user-badge">
       <div>
@@ -497,8 +501,9 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
     <label>Maç Türü</label>
     <div class="type-toggle" id="type-toggle">
-      <button class="type-btn active" onclick="setType(this,'bolge')">🏆 Bölge / Kulüp</button>
+      <button class="type-btn active" onclick="setType(this,'bolge')">🏆 Bölge Maçı</button>
       <button class="type-btn" onclick="setType(this,'okul')">🏫 Okul Maçı</button>
+      <button class="type-btn" onclick="setType(this,'ozellig')">⭐ Özel Lig</button>
     </div>
 
     <div id="bolge-fields">
@@ -506,17 +511,18 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
         <div><label>🏠 Ev Sahibi</label><input type="text" id="m-home" autocomplete="off"></div>
         <div><label>✈️ Deplasman</label><input type="text" id="m-away" autocomplete="off"></div>
       </div>
-      <div class="form-row">
-        <div><label>🏆 Lig</label>
-          <select id="m-league">
-            <option value="">Seç...</option>
-            <option>BSL (Süper Lig)</option><option>1. Lig</option><option>2. Lig</option>
-            <option>Bölgesel Lig</option><option>U18 Ligi</option><option>U16 Ligi</option>
-            <option>U14 Ligi</option><option>Kadınlar Ligi</option>
-            <option>Türkiye Kupası</option><option>Diğer</option>
-          </select>
-        </div>
-        <div><label>📊 Skor</label><input type="text" id="m-score" placeholder="78 – 65" autocomplete="off"></div>
+      <label>📂 Kategori</label>
+      <div class="cat-grid" id="bolge-cat-grid">
+        <button class="cat-btn" onclick="selectCat(this,'U10 Erkekler')">U10 Erkekler</button>
+        <button class="cat-btn" onclick="selectCat(this,'U10 Kızlar')">U10 Kızlar</button>
+        <button class="cat-btn" onclick="selectCat(this,'U12 Erkekler')">U12 Erkekler</button>
+        <button class="cat-btn" onclick="selectCat(this,'U12 Kızlar')">U12 Kızlar</button>
+        <button class="cat-btn" onclick="selectCat(this,'U14 Erkekler')">U14 Erkekler</button>
+        <button class="cat-btn" onclick="selectCat(this,'U14 Kızlar')">U14 Kızlar</button>
+        <button class="cat-btn" onclick="selectCat(this,'U16 Erkekler')">U16 Erkekler</button>
+        <button class="cat-btn" onclick="selectCat(this,'U16 Kızlar')">U16 Kızlar</button>
+        <button class="cat-btn" onclick="selectCat(this,'U18 Erkekler')">U18 Erkekler</button>
+        <button class="cat-btn" onclick="selectCat(this,'U18 Kızlar')">U18 Kızlar</button>
       </div>
     </div>
 
@@ -532,9 +538,24 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
         <button class="cat-btn" onclick="selectCat(this,'Genç Erkekler')">Genç Erkekler</button>
         <button class="cat-btn" onclick="selectCat(this,'Genç Kızlar')">Genç Kızlar</button>
       </div>
+    </div>
+
+    <div id="ozellig-fields" style="display:none;">
       <div class="form-row">
-        <div><label>📊 Skor</label><input type="text" id="m-score-okul" placeholder="32 – 18" autocomplete="off"></div>
-        <div></div>
+        <div><label>🏠 Ev Sahibi</label><input type="text" id="m-home-ozel" autocomplete="off"></div>
+        <div><label>✈️ Deplasman</label><input type="text" id="m-away-ozel" autocomplete="off"></div>
+      </div>
+      <label>📂 Kategori</label>
+      <div class="cat-grid" id="ozellig-cat-grid">
+        <button class="cat-btn" onclick="selectCat(this,'U10')">U10</button>
+        <button class="cat-btn" onclick="selectCat(this,'U11')">U11</button>
+        <button class="cat-btn" onclick="selectCat(this,'U12')">U12</button>
+        <button class="cat-btn" onclick="selectCat(this,'U13')">U13</button>
+        <button class="cat-btn" onclick="selectCat(this,'U14')">U14</button>
+        <button class="cat-btn" onclick="selectCat(this,'U15')">U15</button>
+        <button class="cat-btn" onclick="selectCat(this,'U16')">U16</button>
+        <button class="cat-btn" onclick="selectCat(this,'U17')">U17</button>
+        <button class="cat-btn" onclick="selectCat(this,'U18')">U18</button>
       </div>
     </div>
 
@@ -553,8 +574,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
     <label>👁️ Gözlemci</label>
     <div class="type-toggle" id="obs-toggle">
       <button class="type-btn active" onclick="setObs(this,'none')">Yok</button>
-      <button class="type-btn" onclick="setObs(this,'verbal')">Var — Sözlü</button>
-      <button class="type-btn" onclick="setObs(this,'written')">Var — Yazılı</button>
+      <button class="type-btn" onclick="setObs(this,'var')">Var</button>
     </div>
     <div id="obs-name-row" style="display:none;">
       <input type="text" id="m-obs-name" placeholder="Gözlemci adı soyadı (zorunlu)" autocomplete="off">
@@ -595,7 +615,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
   <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;">
     <input type="text" id="search-input" placeholder="🔍 Ara..." style="max-width:170px;margin-bottom:0;" oninput="renderMatches()" autocomplete="off">
     <select id="filter-type" style="max-width:125px;margin-bottom:0;" onchange="renderMatches()">
-      <option value="">Tüm Türler</option><option value="bolge">Bölge / Kulüp</option><option value="okul">Okul</option>
+      <option value="">Tüm Türler</option><option value="bolge">Bölge Maçı</option><option value="okul">Okul Maçı</option><option value="ozellig">Özel Lig</option>
     </select>
     <select id="sort-select" style="max-width:120px;margin-bottom:0;" onchange="renderMatches()">
       <option value="date-desc">En Yeni</option><option value="date-asc">En Eski</option>
@@ -779,12 +799,30 @@ let qDiff='kolay', qList=[], qIdx=0, qCorrect=0, qAnswered=false;
 // AUTH — Firebase hazır olana kadar bekle
 // ════════════════════════════════════════════════════════════
 function waitForFirebase(cb){
-  if(window._FB_READY)cb(); else document.addEventListener('fb-ready',cb);
+  if(window._FB_READY){ cb(); return; }
+  let called=false;
+  const handler=()=>{ if(!called){called=true; cb();} };
+  document.addEventListener('fb-ready', handler);
+  setTimeout(()=>{
+    if(!called){
+      called=true;
+      document.getElementById('loading-overlay').style.display='none';
+      document.getElementById('auth-screen').style.display='flex';
+      document.getElementById('auth-screen').style.opacity='1';
+      const errEl=document.getElementById('auth-error');
+      errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.';
+      errEl.classList.add('show');
+      document.querySelectorAll('.auth-btn').forEach(b=>b.disabled=true);
+    }
+  }, 8000);
 }
 
 window.onload = ()=>{
+  setTimeout(()=>{
+    const sl=document.getElementById('loading-slow');
+    if(sl && document.getElementById('loading-overlay').style.display!=='none')sl.style.display='block';
+  },3000);
   waitForFirebase(()=>{
-    // Kayıtlı oturum var mı?
     const saved = localStorage.getItem('hd_session') || sessionStorage.getItem('hd_session');
     if(saved){
       try{
@@ -996,6 +1034,7 @@ function setType(btn,val){
   btn.classList.add('active');
   document.getElementById('bolge-fields').style.display=val==='bolge'?'':'none';
   document.getElementById('okul-fields').style.display=val==='okul'?'':'none';
+  document.getElementById('ozellig-fields').style.display=val==='ozellig'?'':'none';
   selectedCat='';document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
 }
 function selectCat(btn,cat){
@@ -1022,22 +1061,25 @@ function toggleErr(el,n){if(selectedErrors.includes(n)){selectedErrors=selectedE
 async function saveMatch(){
   const date=getDateStr();const time=getTimeStr();
   if(matchStatus==='managed'&&!currentRating){showToast('⭐ Puan vermeyi unutma!');return;}
-  if(matchType==='okul'&&!selectedCat){showToast('⚠️ Kategori seç!');return;}
+  if((matchType==='okul'||matchType==='bolge'||matchType==='ozellig')&&!selectedCat){showToast('⚠️ Kategori seç!');return;}
   if(obsStatus!=='none'&&!document.getElementById('m-obs-name').value.trim()){showToast('⚠️ Gözlemci adını gir!');return;}
   const saveBtn=document.getElementById('save-btn');saveBtn.disabled=true;saveBtn.textContent='⏳ Kaydediliyor...';
   const ce=document.getElementById('m-custom-error').value.trim();
   const allErr=matchStatus==='managed'?(ce?[...selectedErrors,...ce.split(',').map(s=>s.trim()).filter(Boolean)]:[...selectedErrors]):[];
-  const obs=obsStatus==='none'?'Yok':`${obsStatus==='verbal'?'Sözlü':'Yazılı'} — ${document.getElementById('m-obs-name').value.trim()}`;
-  const score=matchType==='bolge'?document.getElementById('m-score').value.trim():document.getElementById('m-score-okul').value.trim();
+  const obs=obsStatus==='none'?'Yok':`Var — ${document.getElementById('m-obs-name').value.trim()}`;
+  const homeVal=matchType==='ozellig'?document.getElementById('m-home-ozel').value.trim():document.getElementById('m-home').value.trim();
+  const awayVal=matchType==='ozellig'?document.getElementById('m-away-ozel').value.trim():document.getElementById('m-away').value.trim();
   const name=matchType==='bolge'
-    ?([document.getElementById('m-home').value.trim(),document.getElementById('m-away').value.trim()].filter(Boolean).join(' – ')||'Bölge Maçı')
-    :(selectedCat||'Okul Maçı');
+    ?([homeVal,awayVal].filter(Boolean).join(' – ')||'Bölge Maçı')
+    :matchType==='ozellig'
+      ?([homeVal,awayVal].filter(Boolean).join(' – ')||`Özel Lig — ${selectedCat}`)
+      :(selectedCat||'Okul Maçı');
   const obj={
-    date,time,matchType,category:matchType==='okul'?selectedCat:'',name,
-    homeTeam:document.getElementById('m-home').value.trim(),
-    awayTeam:document.getElementById('m-away').value.trim(),
-    league:document.getElementById('m-league').value,
-    score,venue:document.getElementById('m-venue').value.trim(),
+    date,time,matchType,category:selectedCat,name,
+    homeTeam:homeVal,
+    awayTeam:awayVal,
+    league:'',
+    score:'',venue:document.getElementById('m-venue').value.trim(),
     role:document.getElementById('m-role').value,
     partners:document.getElementById('m-partners').value.trim(),
     observer:obs,rating:matchStatus==='managed'?currentRating:0,
@@ -1065,10 +1107,10 @@ async function saveMatch(){
 }
 
 function resetFormFields(){
-  ['m-home','m-away','m-score','m-score-okul','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('m-league').value='';
-  currentRating=0;selectedErrors=[];
+  ['m-home','m-away','m-home-ozel','m-away-ozel','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  currentRating=0;selectedErrors=[];selectedCat='';
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
   renderErrorTags();
 }
 
@@ -1077,8 +1119,8 @@ function cancelEdit(){
   document.getElementById('form-title').textContent='🏀 Yeni Maç Kaydı';
   document.getElementById('cancel-edit-btn').style.display='none';
   document.getElementById('duplicate-btn').style.display='none';
-  ['m-home','m-away','m-score','m-score-okul','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('m-league').value='';document.getElementById('m-role').value='';
+  ['m-home','m-away','m-home-ozel','m-away-ozel','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('m-role').value='';
   currentRating=0;selectedErrors=[];selectedCat='';
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
@@ -1097,21 +1139,23 @@ function openEditForm(id){
   document.getElementById('duplicate-btn').style.display='none';
   setDT(m.date,m.time||'');
   setStatus(document.getElementById('status-toggle').querySelectorAll('.type-btn')[m.upcoming?1:0],m.upcoming?'upcoming':'managed');
-  setType(document.getElementById('type-toggle').querySelectorAll('.type-btn')[m.matchType==='okul'?1:0],m.matchType||'bolge');
-  document.getElementById('m-home').value=m.homeTeam||'';
-  document.getElementById('m-away').value=m.awayTeam||'';
-  document.getElementById('m-league').value=m.league||'';
-  document.getElementById('m-score').value=m.matchType==='bolge'?m.score||'':'';
-  document.getElementById('m-score-okul').value=m.matchType==='okul'?m.score||'':'';
+  const typeIdx=m.matchType==='okul'?1:m.matchType==='ozellig'?2:0;
+  setType(document.getElementById('type-toggle').querySelectorAll('.type-btn')[typeIdx],m.matchType||'bolge');
+  if(m.matchType==='ozellig'){
+    document.getElementById('m-home-ozel').value=m.homeTeam||'';
+    document.getElementById('m-away-ozel').value=m.awayTeam||'';
+  }else{
+    document.getElementById('m-home').value=m.homeTeam||'';
+    document.getElementById('m-away').value=m.awayTeam||'';
+  }
   document.getElementById('m-venue').value=m.venue||'';
   document.getElementById('m-role').value=m.role||'';
   document.getElementById('m-partners').value=m.partners||'';
   document.getElementById('m-comment').value=m.comment||'';
   document.getElementById('m-keymom').value=m.keymom||'';
-  if(m.matchType==='okul'&&m.category){selectedCat=m.category;document.querySelectorAll('.cat-btn').forEach(b=>{if(b.textContent===m.category)b.classList.add('active');});}
+  if(m.category){selectedCat=m.category;document.querySelectorAll('.cat-btn').forEach(b=>{if(b.textContent===m.category)b.classList.add('active');});}
   if(!m.observer||m.observer==='Yok')setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[0],'none');
-  else if(m.observer.startsWith('Sözlü')){setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[1],'verbal');document.getElementById('m-obs-name').value=m.observer.replace('Sözlü — ','');}
-  else{setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[2],'written');document.getElementById('m-obs-name').value=m.observer.replace('Yazılı — ','');}
+  else{setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[1],'var');document.getElementById('m-obs-name').value=m.observer.replace('Var — ','');}
   currentRating=m.rating||0;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<currentRating));
   selectedErrors=[...(m.errors||[])];renderErrorTags();
   switchTab('add',null);window.scrollTo({top:0,behavior:'smooth'});
@@ -1141,6 +1185,9 @@ function updateHeaderStats(){
   document.getElementById('hstat-month').textContent=tm;
   document.getElementById('hstat-avg').textContent=avg;
   document.getElementById('hstat-up').textContent=up;
+  document.getElementById('hstat-bolge').textContent=past.filter(m=>m.matchType==='bolge').length;
+  document.getElementById('hstat-ozellig').textContent=past.filter(m=>m.matchType==='ozellig').length;
+  document.getElementById('hstat-okul').textContent=past.filter(m=>m.matchType==='okul').length;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1237,7 +1284,7 @@ function matchCardHTML(m){
   const d=new Date((m.date||'2000-01-01')+'T00:00:00');
   const fut=isFuture(m),od=isOverdue(m);
   const rc=fut?'':(m.rating>=7?'rating-good':m.rating>=5?'rating-ok':'rating-bad');
-  const tb=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">${m.league||'Bölge'}</span>`;
+  const tb=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:m.matchType==='ozellig'?`<span class="badge" style="background:rgba(61,184,160,.13);color:var(--accent3);">⭐ ${m.category||'Özel Lig'}</span>`:`<span class="badge badge-bolge">🏆 ${m.category||'Bölge'}</span>`;
   return `<div class="match-card${fut?' future-card':''}" onclick="openMatchDetail('${m.id}')">
     <div class="match-date-badge${fut?' fdb':''}">
       <div class="match-date-day">${d.getDate()}</div>
@@ -1275,7 +1322,7 @@ function openMatchDetail(id){
         <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;">${m.name||'Maç'}</div>
         <div style="color:var(--text3);font-size:10px;margin-top:2px;">${m.date||''}${m.time?' · '+m.time:''} · ${m.role||'—'}</div>
         <div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap;">
-          ${m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:`<span class="badge badge-bolge">${m.league||'Bölge'}</span>`}
+          ${m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:m.matchType==='ozellig'?`<span class="badge" style="background:rgba(61,184,160,.13);color:var(--accent3);">⭐ ${m.category||'Özel Lig'}</span>`:`<span class="badge badge-bolge">🏆 ${m.category||'Bölge'}</span>`}
           ${m.role?`<span class="badge badge-role">${m.role}</span>`:''}
         </div>
       </div>
