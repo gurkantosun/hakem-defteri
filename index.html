@@ -1620,7 +1620,7 @@ function parseRowsToMatches(rows, matchType, userName){
     const row = rows[i];
     if(!row || row.length < 2) continue;
 
-    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role;
+    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner;
 
     if(matchType === 'ozellig'){
       // A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Organizasyon G=Kategori H=Hakem1 I=Hakem2
@@ -1638,6 +1638,9 @@ function parseRowsToMatches(rows, matchType, userName){
       category = [org, cat].filter(Boolean).join(' — ');
       venue    = String(row[1]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      // Partner: diğer hakem (baş harf formatına çevir)
+      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner = toTitleCase(rawPartner);
 
     } else if(matchType === 'okul'){
       // A=Tarih B=Saat C=Salon D=Organizasyon E=Grup/Kategori F=Hakem1 G=Hakem2
@@ -1655,6 +1658,8 @@ function parseRowsToMatches(rows, matchType, userName){
       category = [org, cat].filter(Boolean).join(' — ');
       venue    = String(row[2]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
+      partner = toTitleCase(rawPartner);
 
     } else {
       // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem
@@ -1670,14 +1675,25 @@ function parseRowsToMatches(rows, matchType, userName){
       category = mapCategory(String(row[5]||'').trim());
       venue    = String(row[1]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner = toTitleCase(rawPartner);
     }
 
     const matchName = homeTeam && awayTeam
       ? (homeTeam + ' – ' + awayTeam)
       : (venue || category || 'Okul Maçı');
-    found.push({ date: dateStr, time, homeTeam, awayTeam, category, venue, role, name: matchName, matchType });
+    found.push({ date: dateStr, time, homeTeam, awayTeam, category, venue, role, partner: partner||'', name: matchName, matchType });
   }
   return found;
+}
+
+function toTitleCase(str){
+  if(!str) return '';
+  // Türkçe büyük harften normal formata çevir: GÜRKAN TOSUN → Gürkan Tosun
+  return str.toLowerCase()
+    .replace(/\bi\b/g,'i')
+    .replace(/(^|\s)(\S)/g, (m,p1,p2) => p1 + p2.toUpperCase())
+    .replace(/İ/g,'İ').replace(/ı/g,'ı');
 }
 
 function saveBolgeLink(){
@@ -1825,7 +1841,7 @@ async function saveSyncMatch(idx, btn){
     category:m.category, name:m.name,
     homeTeam:m.homeTeam, awayTeam:m.awayTeam,
     league:'', score:'', venue:m.venue,
-    role:m.role, partners:'', observer:'Yok',
+    role:m.role, partners:m.partner||'', observer:'Yok',
     rating:0, errors:[], comment:'', keymom:'',
     upcoming:true,
   };
@@ -1853,7 +1869,7 @@ async function saveAllSyncMatches(){
       category:m.category, name:m.name,
       homeTeam:m.homeTeam, awayTeam:m.awayTeam,
       league:'', score:'', venue:m.venue,
-      role:m.role, partners:'', observer:'Yok',
+      role:m.role, partners:m.partner||'', observer:'Yok',
       rating:0, errors:[], comment:'', keymom:'',
       upcoming:true,
     };
