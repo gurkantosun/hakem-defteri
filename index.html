@@ -1272,13 +1272,27 @@ function renderDashboard(){
     const diff=Math.ceil((new Date(nearestDate)-new Date(t))/(1000*60*60*24));
     const diffStr=diff===0?'Bugün!':diff===1?'Yarın':`${diff} gün sonra`;
     upEl.innerHTML=`<div class="section-title">📅 Yaklaşan — ${diffStr}</div>`+
-      nearestMatches.map(m=>`<div class="upcoming-notice" onclick="openMatchDetail('${m.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span class="upcoming-notice-header">${m.name}</span>
-          <span class="upcoming-date-badge">${m.time||''}</span>
-        </div>
-        <div class="upcoming-notice-meta">${m.date} · ${m.venue||'—'} · ${m.role||'—'}</div>
-      </div>`).join('');
+      nearestMatches.map(m=>{
+        const d=new Date((m.date||'2000-01-01')+'T00:00:00');
+        const tb=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:m.matchType==='ozellig'?`<span class="badge" style="background:rgba(61,184,160,.13);color:var(--accent3);">⭐ ${m.category||'Özel Lig'}</span>`:`<span class="badge badge-bolge">🏆 ${m.category||'Bölge'}</span>`;
+        return `<div class="match-card future-card" onclick="openMatchDetail('${m.id}')">
+          <div class="match-date-badge fdb">
+            <div class="match-date-day">${d.getDate()}</div>
+            <div class="match-date-mon">${d.toLocaleString('tr-TR',{month:'short'}).toUpperCase()}</div>
+          </div>
+          <div class="match-info">
+            <h3>${m.name||'Maç'}</h3>
+            <div class="match-meta">
+              ${tb}
+              ${m.role?`<span>👤 ${m.role}</span>`:''}
+              ${m.time?`<span>🕐 ${m.time}</span>`:''}
+              ${m.venue?`<span>📍 ${m.venue}</span>`:''}
+              <span class="future-pill">📅 Yaklaşan</span>
+            </div>
+          </div>
+          <div><span style="font-size:15px;">📍</span></div>
+        </div>`;
+      }).join('');
   }else upEl.innerHTML='';
 
   // Stats
@@ -1798,20 +1812,22 @@ async function autoSyncOnLoad(){
     renderSyncResults();
     document.getElementById('sync-results').style.display = 'block';
 
-    // Dashboard bildirimi (kocaman, kapatana kadar durur)
+    // Dashboard bildirimi
     const dashNotif = document.getElementById('dashboard-notification');
     const dashText  = document.getElementById('dashboard-notification-text');
     if(dashNotif && dashText){
       dashText.textContent = allNew.length + ' yeni maç ataması bulundu!';
       dashNotif.style.display = 'block';
     }
-    // Atamalar sekmesi bildirimi
     const notif = document.getElementById('sync-notification');
     const notifText = document.getElementById('sync-notification-text');
     if(notif && notifText){
       notifText.textContent = allNew.length + ' yeni maç ataması bulundu!';
       notif.style.display = 'block';
     }
+  } else {
+    // Atama yok bildirimi — küçük toast
+    showToast('✅ Tarama tamamlandı — yeni atama yok.');
   }
 }
 
