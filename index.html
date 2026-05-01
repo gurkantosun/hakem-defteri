@@ -432,12 +432,16 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="panel active">
-  <div id="dashboard-notification" style="display:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:16px;padding:18px 20px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
-    <div style="font-size:22px;margin-bottom:6px;">🏀</div>
-    <div style="font-weight:700;font-size:15px;margin-bottom:4px;" id="dashboard-notification-text"></div>
-    <div style="font-size:11px;opacity:.8;margin-bottom:10px;">Atamalar sekmesinden inceleyip kaydedebilirsin.</div>
-    <button onclick="switchTab('drivesync',document.querySelectorAll('.nav-btn')[7]);document.getElementById('dashboard-notification').style.display='none'" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;">📋 Atamaları Gör</button>
-    <button onclick="document.getElementById('dashboard-notification').style.display='none'" style="background:rgba(0,0,0,.2);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;margin-left:8px;">Kapat ×</button>
+  <div id="dashboard-notification" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:16px 20px;box-shadow:0 4px 24px rgba(0,0,0,.4);">
+    <div style="max-width:480px;margin:0 auto;">
+      <div style="font-size:11px;opacity:.75;margin-bottom:2px;">🔔 HAKEM DEFTERİ BİLDİRİMİ</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:8px;" id="dashboard-notification-text"></div>
+      <div style="font-size:11px;opacity:.8;margin-bottom:10px;" id="dashboard-notification-sub"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="dashboard-notif-goto" onclick="switchTab('drivesync',document.querySelectorAll('.nav-btn')[7]);document.getElementById('dashboard-notification').style.display='none'" style="display:none;background:rgba(255,255,255,.25);border:none;color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;">📋 Atamaları Gör</button>
+        <button onclick="document.getElementById('dashboard-notification').style.display='none'" style="background:rgba(0,0,0,.2);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;">Kapat ×</button>
+      </div>
+    </div>
   </div>
   <div id="overdue-section"></div>
   <div id="upcoming-section"></div>
@@ -1781,24 +1785,54 @@ async function autoSyncOnLoad(){
   if(!userName) return;
 
   let allNew = [];
+  let programChanged = false;
   const types = ['ozellig','okul'];
 
   for(const type of types){
     try{
       const sh = SYNC_SHEETS[type];
       const rows = await fetchSheetData(sh.id, sh.gid);
+
+      // Program değişikliği tespiti: boş hakem satırlarının sayısı
+      // Önceki taramada kaç satır vardı ve kaç boş hakemli maç vardı
+      const storeKey = 'hd_scan_' + type;
+      const prevData = JSON.parse(localStorage.getItem(storeKey) || '{"totalRows":0,"emptyRefs":0}');
+
+      // Toplam maç satırı (header hariç)
+      const totalRows = rows.length - 1;
+
+      // Boş hakem olmayan satırlar (hakem atanmış) — yani dolmuş hakemler
+      let filledRefs = 0;
+      for(let i = 1; i < rows.length; i++){
+        const row = rows[i];
+        if(!row) continue;
+        const h1col = type === 'okul' ? 5 : 7;
+        const h1 = String(row[h1col]||'').trim();
+        if(h1) filledRefs++;
+      }
+
+      // Yeni atamalarımı bul
       const found = parseRowsToMatches(rows, type, userName);
       const newOnes = found.filter(m =>
         !matches.some(x => x.date === m.date && x.homeTeam === m.homeTeam && x.awayTeam === m.awayTeam)
       );
       allNew = allNew.concat(newOnes);
 
-      // Sekmedeki status'u güncelle
+      // Program değişti mi? (daha fazla hakem atandı ya da satır sayısı değişti)
+      if(filledRefs > prevData.filledRefs || totalRows !== prevData.totalRows){
+        programChanged = true;
+      }
+
+      // Bu taramanın sonucunu kaydet
+      localStorage.setItem(storeKey, JSON.stringify({ totalRows, filledRefs }));
+
+      // Sekme durumu
       const statusKey = type === 'ozellig' ? 'ozel' : 'okul';
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
       if(statusEl) statusEl.textContent = newOnes.length
         ? '🔔 ' + newOnes.length + ' yeni atama var!'
         : 'Yeni atama yok.';
+
     }catch(e){
       console.error('AutoSync hata ('+type+'):', e);
       const statusKey = type === 'ozellig' ? 'ozel' : 'okul';
@@ -1807,27 +1841,44 @@ async function autoSyncOnLoad(){
     }
   }
 
+  // Bildirimi göster
+  showSyncNotification(allNew, programChanged);
+}
+
+function showSyncNotification(allNew, programChanged){
+  const notif   = document.getElementById('dashboard-notification');
+  const text    = document.getElementById('dashboard-notification-text');
+  const sub     = document.getElementById('dashboard-notification-sub');
+  const gotoBtn = document.getElementById('dashboard-notif-goto');
+  if(!notif || !text) return;
+
   if(allNew.length > 0){
+    // Yeni atama var
+    text.textContent = '🏀 ' + allNew.length + ' yeni maç ataması bulundu!';
+    sub.textContent = 'Atamalar sekmesinden inceleyip kaydedebilirsin.';
+    gotoBtn.style.display = 'inline-block';
+    notif.style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
+    notif.style.display = 'block';
+    // Sonuçları hazırla
     syncFoundMatches = allNew;
     renderSyncResults();
     document.getElementById('sync-results').style.display = 'block';
 
-    // Dashboard bildirimi
-    const dashNotif = document.getElementById('dashboard-notification');
-    const dashText  = document.getElementById('dashboard-notification-text');
-    if(dashNotif && dashText){
-      dashText.textContent = allNew.length + ' yeni maç ataması bulundu!';
-      dashNotif.style.display = 'block';
-    }
-    const notif = document.getElementById('sync-notification');
-    const notifText = document.getElementById('sync-notification-text');
-    if(notif && notifText){
-      notifText.textContent = allNew.length + ' yeni maç ataması bulundu!';
-      notif.style.display = 'block';
-    }
+  } else if(programChanged){
+    // Program değişti ama sana atama yok
+    text.textContent = '📋 Program güncellendi, sana atama yapılmadı.';
+    sub.textContent = 'Yeni hakem atamaları yapıldı ancak listende değişiklik yok.';
+    gotoBtn.style.display = 'none';
+    notif.style.background = 'linear-gradient(135deg,#3a4060,#2d3250)';
+    notif.style.display = 'block';
+
   } else {
-    // Atama yok bildirimi — küçük toast
-    showToast('✅ Tarama tamamlandı — yeni atama yok.');
+    // Hiç değişiklik yok
+    text.textContent = '✅ Yeni atama yok, program aynı.';
+    sub.textContent = 'Son taramadan bu yana değişiklik tespit edilmedi.';
+    gotoBtn.style.display = 'none';
+    notif.style.background = 'linear-gradient(135deg,#2a3a2a,#1e2e1e)';
+    notif.style.display = 'block';
   }
 }
 
