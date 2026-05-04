@@ -1900,6 +1900,11 @@ function renderSyncResults(){
 async function saveSyncMatch(idx, btn){
   const m = syncFoundMatches[idx];
   if(!m) return;
+  // Zaten kaydedilmiş mi kontrol et (tarih + takımlar + saat)
+  if(matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time)){
+    btn.outerHTML = '<span style="font-size:10px;color:var(--good);white-space:nowrap;">✅ Kayıtlı</span>';
+    return;
+  }
   btn.disabled = true; btn.textContent = '⏳';
   const obj = {
     date:m.date, time:m.time, matchType:m.matchType,
@@ -1925,10 +1930,15 @@ async function saveSyncMatch(idx, btn){
 
 async function saveAllSyncMatches(){
   const saveAllBtn = document.getElementById('sync-save-all-btn');
-  saveAllBtn.disabled = true; saveAllBtn.textContent = '⏳';
+  saveAllBtn.disabled = true; saveAllBtn.textContent = '⏳ Kaydediliyor...';
+
+  // Kaydedilecekleri başta bir kopyaya al
+  const toSave = syncFoundMatches.filter(m =>
+    !matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time)
+  );
+
   let saved = 0;
-  for(const m of syncFoundMatches){
-    if(matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam)) continue;
+  for(const m of toSave){
     const obj = {
       date:m.date, time:m.time, matchType:m.matchType,
       category:m.category, name:m.name,
@@ -1944,9 +1954,9 @@ async function saveAllSyncMatches(){
       saved++;
     }catch(e){ console.error(e); }
   }
+
   sortMatchesArray();
   updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar();
-  renderSyncResults();
   showToast('✅ ' + saved + ' atama kaydedildi!');
   saveAllBtn.disabled = false; saveAllBtn.textContent = '✅ Hepsini Kaydet';
   syncFoundMatches = [];
