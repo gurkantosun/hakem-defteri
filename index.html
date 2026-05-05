@@ -777,6 +777,14 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
     <div id="sync-okul-status" style="font-size:11px;color:var(--text3);margin-top:6px;min-height:14px;"></div>
   </div>
 
+  <!-- Arşiv Taraması -->
+  <div class="card" style="margin-bottom:10px;border:1px solid rgba(255,200,0,.15);">
+    <div class="section-title" style="margin-bottom:6px;">🗂️ Arşiv Taraması</div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Geçmiş sezon arşivlerini tara — sana ait oynanan maçları otomatik geçmiş olarak kaydet. Zaten kayıtlı maçlar tekrar eklenmez.</p>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#5a4a00,#7a6500);" id="sync-arsiv-btn" onclick="runArsivScan()">🗂️ Arşivi Tara</button>
+    <div id="sync-arsiv-status" style="font-size:11px;color:var(--text3);margin-top:6px;min-height:14px;"></div>
+  </div>
+
   <!-- Sonuçlar -->
   <div id="sync-results" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;">
@@ -1607,6 +1615,11 @@ const SYNC_SHEETS = {
   okul:    { id: '18y8chaKZvAabwo00EYa0doFSyI3vASrWVMkcxrMcjuQ',  gid: '1691463126' }
 };
 
+const ARSIV_SHEETS = {
+  ozellig: { id: '1djS7vV33pawiJa_zcuK2Z4j69RD0VKr-rYsRnLZ8H8s', gid: '579220983'  },
+  okul:    { id: '1HrTEuaINToqL53CIk6ndCTAnYudrCRuAFshrHQC_5kY',  gid: '1691463126' }
+};
+
 let syncFoundMatches = [];
 let syncCurrentType = '';
 
@@ -2025,8 +2038,147 @@ async function saveAllSyncMatches(){
   document.getElementById('sync-results').style.display = 'none';
 }
 
-// ════════════════════════════════════════════════════════════
-// TOAST
+function isAlreadySaved(m){
+  return matches.some(x => {
+    if(x.date !== m.date) return false;
+    // Tarih + saat eşleşiyorsa yeterli — takım adı yazılmamış olabilir
+    if(x.time && m.time && x.time === m.time) return true;
+    // Saat yoksa salon + tür kontrolü
+    if(m.matchType === 'okul'){
+      return x.venue === m.venue && x.matchType === 'okul';
+    }
+    if(m.homeTeam && m.awayTeam && x.homeTeam && x.awayTeam){
+      return x.homeTeam.trim().toUpperCase() === m.homeTeam.trim().toUpperCase() &&
+             x.awayTeam.trim().toUpperCase() === m.awayTeam.trim().toUpperCase();
+    }
+    return x.venue === m.venue;
+  });
+}
+
+async function runArsivScan(){
+  const userName = getUserNameUpper();
+  if(!userName){ showToast('⚠️ Profil bilgisi eksik!'); return; }
+
+  const btn = document.getElementById('sync-arsiv-btn');
+  const statusEl = document.getElementById('sync-arsiv-status');
+  btn.disabled = true; btn.textContent = '⏳ Arşiv taranıyor...';
+  statusEl.textContent = 'Özel Lig arşivi okunuyor...';
+
+  let totalFound = 0;
+  let totalSaved = 0;
+  let totalSkipped = 0;
+
+  const types = ['ozellig', 'okul'];
+
+  for(const type of types){
+    const label = type === 'ozellig' ? 'Özel Lig' : 'Okul';
+    statusEl.textContent = label + ' arşivi taranıyor...';
+    try{
+      const sh = ARSIV_SHEETS[type];
+      const rows = await fetchSheetData(sh.id, sh.gid);
+
+      // Arşivdeki tüm satırları oku — gelecek filtresi YOK, geçmiş maçlar da dahil
+      const found = parseRowsToMatchesAll(rows, type, userName);
+      totalFound += found.length;
+
+      for(const m of found){
+        if(isAlreadySaved(m)){
+          totalSkipped++;
+          continue;
+        }
+        // Geçmiş maç olarak kaydet (upcoming: false, rating: 0)
+        const obj = {
+          date: m.date, time: m.time, matchType: m.matchType,
+          category: m.category, name: m.name,
+          homeTeam: m.homeTeam, awayTeam: m.awayTeam,
+          league:'', score:'', venue: m.venue,
+          role: m.role, partners: m.partner||'', observer:'Yok',
+          rating:0, errors:[], comment:'', keymom:'',
+          upcoming: false,
+        };
+        try{
+          const newId = await window._FB.addMatch(currentUser.uid, obj);
+          matches.unshift({id:newId,...obj});
+          totalSaved++;
+        }catch(e){ console.error('Arşiv kayıt hatası:', e); }
+      }
+    }catch(e){
+      statusEl.textContent = '❌ ' + label + ' arşivi okunamadı: ' + e.message;
+      console.error(e);
+    }
+  }
+
+  if(totalSaved > 0){
+    sortMatchesArray();
+    updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar(); renderAnalysis();
+  }
+
+  statusEl.textContent = totalFound === 0
+    ? 'Arşivde sana ait maç bulunamadı.'
+    : totalSaved === 0
+      ? `✅ ${totalFound} maç bulundu — hepsi zaten kayıtlı (${totalSkipped} maç atlandı).`
+      : `✅ ${totalSaved} yeni geçmiş maç eklendi, ${totalSkipped} zaten kayıtlıydı.`;
+
+  if(totalSaved > 0) showToast('✅ Arşivden ' + totalSaved + ' maç eklendi!');
+
+  btn.disabled = false; btn.textContent = '🗂️ Arşivi Tara';
+}
+
+// Arşiv için: gelecek filtresi olmadan tüm satırları parse et
+function parseRowsToMatchesAll(rows, matchType, userName){
+  const found = [];
+  const name = userName.toUpperCase();
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 2) continue;
+    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner;
+
+    if(matchType === 'ozellig'){
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(h1 !== name && h2 !== name) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      if(!dateStr) continue;
+      time     = String(row[2]||'').trim();
+      homeTeam = String(row[3]||'').trim();
+      awayTeam = String(row[4]||'').trim();
+      const org = String(row[5]||'').trim();
+      const cat = String(row[6]||'').trim();
+      category = [org, cat].filter(Boolean).join(' — ');
+      venue    = String(row[1]||'').trim();
+      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner  = toTitleCase(rawPartner);
+    } else {
+      // okul: A=Tarih B=Saat C=Salon D=Organizasyon E=Kategori F=Hakem1 G=Hakem2
+      if(row.length < 7) continue;
+      h1 = String(row[5]||'').toUpperCase().trim();
+      h2 = String(row[6]||'').toUpperCase().trim();
+      if(h1 !== name && h2 !== name) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      if(!dateStr) continue;
+      time     = String(row[1]||'').trim();
+      homeTeam = '';
+      awayTeam = '';
+      const org = String(row[3]||'').trim();
+      const cat = String(row[4]||'').trim();
+      category = [org, cat].filter(Boolean).join(' — ');
+      venue    = String(row[2]||'').trim();
+      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
+      partner  = toTitleCase(rawPartner);
+    }
+
+    const matchName = homeTeam && awayTeam
+      ? (homeTeam + ' – ' + awayTeam)
+      : (venue || category || 'Arşiv Maçı');
+    found.push({ date:dateStr, time, homeTeam, awayTeam, category, venue, role, partner:partner||'', name:matchName, matchType });
+  }
+  return found;
+}
+
+
 // ════════════════════════════════════════════════════════════
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 </script>
