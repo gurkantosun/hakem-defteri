@@ -1420,10 +1420,15 @@ function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'
 async function deleteMatch(id){
   if(!confirm('Sil?'))return;
   try{
+    const deleted = matches.find(m=>m.id===id);
     await window._FB.deleteMatchDB(currentUser.uid,id);
     matches=matches.filter(m=>m.id!==id);
     closeModal();updateHeaderStats();renderDashboard();renderMatches();renderCalendar();renderAnalysis();
     showToast('🗑️ Silindi.');
+    // Yaklaşan maçsa arka planda yeniden tara
+    if(deleted && deleted.upcoming && (deleted.matchType==='ozellig'||deleted.matchType==='okul')){
+      setTimeout(()=>autoSyncOnLoad(), 800);
+    }
   }catch(e){showToast('❌ Silinemedi: '+e.message);}
 }
 
