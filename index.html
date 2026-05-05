@@ -1837,15 +1837,24 @@ async function autoSyncOnLoad(){
 
   let allNew = [];
   let programChanged = false;
-  const types = ['ozellig','okul'];
+  // Bölge linki kaydedilmişse onu da tara
+  const bolgeUrl = localStorage.getItem('hd_bolge_url') || '';
+  const types = bolgeUrl ? ['bolge','ozellig','okul'] : ['ozellig','okul'];
 
   for(const type of types){
-    const label = type==='ozellig' ? 'Özel Lig' : 'Okul';
+    const label = type==='bolge' ? 'Bölge' : type==='ozellig' ? 'Özel Lig' : 'Okul';
     const indText = document.getElementById('scan-indicator-text');
     if(indText) indText.textContent = label + ' programı taranıyor...';
     try{
-      const sh = SYNC_SHEETS[type];
-      const rows = await fetchSheetData(sh.id, sh.gid);
+      let sheetId, gid;
+      if(type === 'bolge'){
+        sheetId = sheetIdFromUrl(bolgeUrl);
+        gid = gidFromUrl(bolgeUrl);
+      } else {
+        sheetId = SYNC_SHEETS[type].id;
+        gid = SYNC_SHEETS[type].gid;
+      }
+      const rows = await fetchSheetData(sheetId, gid);
 
       const storeKey = 'hd_scan_' + type;
       const prevData = JSON.parse(localStorage.getItem(storeKey) || '{"totalRows":0,"filledRefs":0}');
@@ -1875,7 +1884,7 @@ async function autoSyncOnLoad(){
 
       localStorage.setItem(storeKey, JSON.stringify({ totalRows, filledRefs }));
 
-      const statusKey = type === 'ozellig' ? 'ozel' : 'okul';
+      const statusKey = type === 'bolge' ? 'bolge' : type === 'ozellig' ? 'ozel' : 'okul';
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
       if(statusEl) statusEl.textContent = newOnes.length
         ? '🔔 ' + newOnes.length + ' yeni atama var!'
@@ -1883,7 +1892,7 @@ async function autoSyncOnLoad(){
 
     }catch(e){
       console.error('AutoSync hata ('+type+'):', e);
-      const statusKey = type === 'ozellig' ? 'ozel' : 'okul';
+      const statusKey = type === 'bolge' ? 'bolge' : type === 'ozellig' ? 'ozel' : 'okul';
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
       if(statusEl) statusEl.textContent = '❌ Bağlantı hatası';
     }
@@ -1913,13 +1922,13 @@ function showSyncNotification(allNew, programChanged){
     document.getElementById('sync-results').style.display = 'block';
   } else if(programChanged){
     icon.textContent = '📋';
-    text.textContent = 'Program güncellendi';
-    sub.textContent = 'Yeni hakem atamaları yapıldı ancak sana atanan bir maç yok.';
+    text.textContent = 'Program güncellendi, ancak sana atama yapılmadı.';
+    sub.textContent = 'Yeni hakem atamaları yapıldı ancak listende değişiklik yok.';
     gotoBtn.style.display = 'none';
   } else {
     icon.textContent = '✅';
-    text.textContent = 'Her şey güncel!';
-    sub.textContent = 'Özel Lig ve Okul programları tarandı. Sana ait yeni bir atama bulunamadı.';
+    text.textContent = 'Yeni atama yok.';
+    sub.textContent = 'Maç programları tarandı — son taramadan bu yana sana ait yeni bir atama bulunamadı.';
     gotoBtn.style.display = 'none';
   }
 
