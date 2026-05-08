@@ -70,8 +70,15 @@
   async function deleteMatchDB(uid, matchId){
     await db.collection('users').doc(uid).collection('matches').doc(matchId).delete();
   }
+  async function saveSettings(uid, data){
+    await db.collection('users').doc(uid).collection('settings').doc('prefs').set(data, {merge:true});
+  }
+  async function loadSettings(uid){
+    const doc = await db.collection('users').doc(uid).collection('settings').doc('prefs').get();
+    return doc.exists ? doc.data() : {};
+  }
 
-  window._FB = { registerUser, loginUser, loadMatches, addMatch, updateMatch, deleteMatchDB };
+  window._FB = { registerUser, loginUser, loadMatches, addMatch, updateMatch, deleteMatchDB, saveSettings, loadSettings };
   window._FB_READY = true;
   document.dispatchEvent(new Event('fb-ready'));
 })();
@@ -1028,8 +1035,14 @@ async function initApp(){
   renderErrorTags();
   renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
   updateHeaderStats();
-  // Özel Lig ve Okul otomatik tara (arka planda)
-  setTimeout(()=>autoSyncOnLoad(), 1500);
+  // Bölge linkini Firebase'den çek, sonra otomatik tara
+  setTimeout(async ()=>{
+    try{
+      const settings = await window._FB.loadSettings(currentUser.uid);
+      if(settings.bolgeUrl) localStorage.setItem('hd_bolge_url', settings.bolgeUrl);
+    }catch(e){}
+    autoSyncOnLoad();
+  }, 1500);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1679,7 +1692,8 @@ function mapCategory(raw){
   if(!raw) return '';
   const r = String(raw).toUpperCase().trim();
   const size = r.match(/U(\d+)/);
-  const gender = r.includes('EC') ? 'Kızlar' : r.includes('EB') ? 'Erkekler' : '';
+  // U[yaş][E=Erkek/K=Kız][grup] örn: U10EC, U12KB
+  const gender = size ? (r.charAt(r.indexOf(size[0]) + size[0].length) === 'E' ? 'Erkekler' : r.charAt(r.indexOf(size[0]) + size[0].length) === 'K' ? 'Kızlar' : '') : '';
   if(size && gender) return 'U' + size[1] + ' ' + gender;
   return String(raw).trim();
 }
@@ -1752,7 +1766,7 @@ function parseRowsToMatches(rows, matchType, userName){
       partner = toTitleCase(rawPartner);
 
     } else {
-      // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem
+      // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem ... L=Gözlemci
       if(row.length < 9) continue;
       h1 = String(row[7]||'').toUpperCase().trim();
       h2 = String(row[8]||'').toUpperCase().trim();
@@ -1767,12 +1781,15 @@ function parseRowsToMatches(rows, matchType, userName){
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
       partner = toTitleCase(rawPartner);
+      // L sütunu (index 11) = Gözlemci
+      const gozlemciRaw = String(row[11]||'').trim();
+      observer = gozlemciRaw ? 'Var — ' + toTitleCase(gozlemciRaw) : 'Yok';
     }
 
     const matchName = homeTeam && awayTeam
       ? (homeTeam + ' – ' + awayTeam)
       : (venue || category || 'Okul Maçı');
-    found.push({ date: dateStr, time, homeTeam, awayTeam, category, venue, role, partner: partner||'', name: matchName, matchType });
+    found.push({ date: dateStr, time, homeTeam, awayTeam, category, venue, role, partner: partner||'', observer: observer||'Yok', name: matchName, matchType });
   }
   return found;
 }
@@ -1786,19 +1803,37 @@ function toTitleCase(str){
     .replace(/İ/g,'İ').replace(/ı/g,'ı');
 }
 
-function saveBolgeLink(){
+async function saveBolgeLink(){
   const url = document.getElementById('sync-bolge-url').value.trim();
   if(!url){ showToast('⚠️ Link gir!'); return; }
   if(!sheetIdFromUrl(url)){ showToast('⚠️ Geçersiz link!'); return; }
   localStorage.setItem('hd_bolge_url', url);
+  try{
+    // Mevcut arşiv listesini çek, yeni linki ekle (tekrar ekleme)
+    const settings = await window._FB.loadSettings(currentUser.uid);
+    const bolgeArchive = settings.bolgeArchive || [];
+    if(!bolgeArchive.includes(url)) bolgeArchive.push(url);
+    await window._FB.saveSettings(currentUser.uid, { bolgeUrl: url, bolgeArchive });
+  }catch(e){ console.error('Firebase settings save:', e); }
   document.getElementById('sync-bolge-status').textContent = '✅ Link kaydedildi!';
   showToast('✅ Bölge linki kaydedildi!');
 }
 
-function initSyncTab(){
-  // Kaydedilmiş bölge linkini yükle
-  const saved = localStorage.getItem('hd_bolge_url');
-  if(saved) document.getElementById('sync-bolge-url').value = saved;
+async function initSyncTab(){
+  // Firebase'den bölge linkini yükle (cihazlar arası senkron)
+  try{
+    const settings = await window._FB.loadSettings(currentUser.uid);
+    if(settings.bolgeUrl){
+      localStorage.setItem('hd_bolge_url', settings.bolgeUrl);
+      document.getElementById('sync-bolge-url').value = settings.bolgeUrl;
+    } else {
+      const saved = localStorage.getItem('hd_bolge_url');
+      if(saved) document.getElementById('sync-bolge-url').value = saved;
+    }
+  }catch(e){
+    const saved = localStorage.getItem('hd_bolge_url');
+    if(saved) document.getElementById('sync-bolge-url').value = saved;
+  }
 }
 
 async function runSyncType(type){
@@ -1900,9 +1935,16 @@ async function autoSyncOnLoad(){
       const found = parseRowsToMatches(rows, type, userName);
       const newOnes = found.filter(m => {
         if(m.matchType === 'okul'){
-          return !matches.some(x => x.date===m.date && x.time===m.time && x.venue===m.venue && x.matchType==='okul');
+          return !matches.some(x =>
+            x.matchType === 'okul' &&
+            x.date === m.date &&
+            x.time === m.time &&
+            x.venue && m.venue &&
+            x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
+          );
         }
-        return !matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time);
+        // Bölge / Özel Lig: tarih + saat eşleşiyorsa yeterli
+        return !matches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
 
@@ -1985,8 +2027,14 @@ async function saveSyncMatch(idx, btn){
   if(!m) return;
   // Zaten kaydedilmiş mi kontrol et (tarih + takımlar + saat)
   const alreadySaved = m.matchType==='okul'
-    ? matches.some(x => x.date===m.date && x.time===m.time && x.venue===m.venue && x.matchType==='okul')
-    : matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time);
+    ? matches.some(x =>
+        x.matchType === 'okul' &&
+        x.date === m.date &&
+        x.time === m.time &&
+        x.venue && m.venue &&
+        x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
+      )
+    : matches.some(x => x.date === m.date && x.time === m.time);
   if(alreadySaved){
     btn.outerHTML = '<span style="font-size:10px;color:var(--good);white-space:nowrap;">✅ Kayıtlı</span>';
     return;
@@ -1997,7 +2045,7 @@ async function saveSyncMatch(idx, btn){
     category:m.category, name:m.name,
     homeTeam:m.homeTeam, awayTeam:m.awayTeam,
     league:'', score:'', venue:m.venue,
-    role:m.role, partners:m.partner||'', observer:'Yok',
+    role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
     rating:0, errors:[], comment:'', keymom:'',
     upcoming:true,
   };
@@ -2020,11 +2068,16 @@ async function saveAllSyncMatches(){
 
   // Kaydedilecekleri başta bir kopyaya al
   const toSave = syncFoundMatches.filter(m => {
-    // Okul maçlarında takım adı yok, venue+date+time ile eşleştir
     if(m.matchType === 'okul'){
-      return !matches.some(x => x.date===m.date && x.time===m.time && x.venue===m.venue && x.matchType==='okul');
+      return !matches.some(x =>
+        x.matchType === 'okul' &&
+        x.date === m.date &&
+        x.time === m.time &&
+        x.venue && m.venue &&
+        x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
+      );
     }
-    return !matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time);
+    return !matches.some(x => x.date === m.date && x.time === m.time);
   });
 
   let saved = 0;
@@ -2034,7 +2087,7 @@ async function saveAllSyncMatches(){
       category:m.category, name:m.name,
       homeTeam:m.homeTeam, awayTeam:m.awayTeam,
       league:'', score:'', venue:m.venue,
-      role:m.role, partners:m.partner||'', observer:'Yok',
+      role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
       rating:0, errors:[], comment:'', keymom:'',
       upcoming:true,
     };
@@ -2077,39 +2130,32 @@ async function runArsivScan(){
   const btn = document.getElementById('sync-arsiv-btn');
   const statusEl = document.getElementById('sync-arsiv-status');
   btn.disabled = true; btn.textContent = '⏳ Arşiv taranıyor...';
-  statusEl.textContent = 'Özel Lig arşivi okunuyor...';
+  statusEl.textContent = 'Arşiv okunuyor...';
 
   let totalFound = 0;
   let totalSaved = 0;
   let totalSkipped = 0;
 
+  // 1. Sabit arşiv dosyaları (Özel Lig + Okul)
   const types = ['ozellig', 'okul'];
-
   for(const type of types){
     const label = type === 'ozellig' ? 'Özel Lig' : 'Okul';
     statusEl.textContent = label + ' arşivi taranıyor...';
     try{
       const sh = ARSIV_SHEETS[type];
       const rows = await fetchSheetData(sh.id, sh.gid);
-
-      // Arşivdeki tüm satırları oku — gelecek filtresi YOK, geçmiş maçlar da dahil
       const found = parseRowsToMatchesAll(rows, type, userName);
       totalFound += found.length;
-
       for(const m of found){
-        if(isAlreadySaved(m)){
-          totalSkipped++;
-          continue;
-        }
-        // Geçmiş maç olarak kaydet (upcoming: false, rating: 0)
+        if(isAlreadySaved(m)){ totalSkipped++; continue; }
         const obj = {
-          date: m.date, time: m.time, matchType: m.matchType,
-          category: m.category, name: m.name,
-          homeTeam: m.homeTeam, awayTeam: m.awayTeam,
-          league:'', score:'', venue: m.venue,
-          role: m.role, partners: m.partner||'', observer:'Yok',
+          date:m.date, time:m.time, matchType:m.matchType,
+          category:m.category, name:m.name,
+          homeTeam:m.homeTeam, awayTeam:m.awayTeam,
+          league:'', score:'', venue:m.venue,
+          role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
           rating:0, errors:[], comment:'', keymom:'',
-          upcoming: false,
+          upcoming:false,
         };
         try{
           const newId = await window._FB.addMatch(currentUser.uid, obj);
@@ -2118,10 +2164,48 @@ async function runArsivScan(){
         }catch(e){ console.error('Arşiv kayıt hatası:', e); }
       }
     }catch(e){
-      statusEl.textContent = '❌ ' + label + ' arşivi okunamadı: ' + e.message;
-      console.error(e);
+      console.error(type + ' arşiv hatası:', e);
     }
   }
+
+  // 2. Kaydedilmiş bölge haftalık linkleri
+  try{
+    const settings = await window._FB.loadSettings(currentUser.uid);
+    const bolgeArchive = settings.bolgeArchive || [];
+    const currentBolge = settings.bolgeUrl || localStorage.getItem('hd_bolge_url') || '';
+    // Aktif link arşivde yoksa ekle
+    if(currentBolge && !bolgeArchive.includes(currentBolge)) bolgeArchive.push(currentBolge);
+
+    for(let i = 0; i < bolgeArchive.length; i++){
+      const url = bolgeArchive[i];
+      const sheetId = sheetIdFromUrl(url);
+      const gid = gidFromUrl(url);
+      if(!sheetId) continue;
+      statusEl.textContent = `Bölge arşivi taranıyor (${i+1}/${bolgeArchive.length})...`;
+      try{
+        const rows = await fetchSheetData(sheetId, gid);
+        const found = parseRowsToMatchesAll(rows, 'bolge', userName);
+        totalFound += found.length;
+        for(const m of found){
+          if(isAlreadySaved(m)){ totalSkipped++; continue; }
+          const obj = {
+            date:m.date, time:m.time, matchType:'bolge',
+            category:m.category, name:m.name,
+            homeTeam:m.homeTeam, awayTeam:m.awayTeam,
+            league:'', score:'', venue:m.venue,
+            role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
+            rating:0, errors:[], comment:'', keymom:'',
+            upcoming:false,
+          };
+          try{
+            const newId = await window._FB.addMatch(currentUser.uid, obj);
+            matches.unshift({id:newId,...obj});
+            totalSaved++;
+          }catch(e){ console.error('Bölge arşiv kayıt hatası:', e); }
+        }
+      }catch(e){ console.error('Bölge linki okunamadı:', url, e); }
+    }
+  }catch(e){ console.error('Bölge arşiv listesi alınamadı:', e); }
 
   if(totalSaved > 0){
     sortMatchesArray();
@@ -2131,7 +2215,7 @@ async function runArsivScan(){
   statusEl.textContent = totalFound === 0
     ? 'Arşivde sana ait maç bulunamadı.'
     : totalSaved === 0
-      ? `✅ ${totalFound} maç bulundu — hepsi zaten kayıtlı (${totalSkipped} maç atlandı).`
+      ? `✅ ${totalFound} maç bulundu — hepsi zaten kayıtlı (${totalSkipped} atlandı).`
       : `✅ ${totalSaved} yeni geçmiş maç eklendi, ${totalSkipped} zaten kayıtlıydı.`;
 
   if(totalSaved > 0) showToast('✅ Arşivden ' + totalSaved + ' maç eklendi!');
@@ -2146,7 +2230,7 @@ function parseRowsToMatchesAll(rows, matchType, userName){
   for(let i = 1; i < rows.length; i++){
     const row = rows[i];
     if(!row || row.length < 2) continue;
-    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner;
+    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner, observer;
 
     if(matchType === 'ozellig'){
       if(row.length < 9) continue;
@@ -2165,6 +2249,25 @@ function parseRowsToMatchesAll(rows, matchType, userName){
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
       partner  = toTitleCase(rawPartner);
+      observer = 'Yok';
+    } else if(matchType === 'bolge'){
+      // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem L=Gözlemci
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(h1 !== name && h2 !== name) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      if(!dateStr) continue;
+      time     = String(row[2]||'').trim();
+      homeTeam = String(row[3]||'').trim();
+      awayTeam = String(row[4]||'').trim();
+      category = mapCategory(String(row[5]||'').trim());
+      venue    = String(row[1]||'').trim();
+      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner  = toTitleCase(rawPartner);
+      const gozlemciRaw = String(row[11]||'').trim();
+      observer = gozlemciRaw ? 'Var — ' + toTitleCase(gozlemciRaw) : 'Yok';
     } else {
       // okul: A=Tarih B=Saat C=Salon D=Organizasyon E=Kategori F=Hakem1 G=Hakem2
       if(row.length < 7) continue;
@@ -2183,12 +2286,13 @@ function parseRowsToMatchesAll(rows, matchType, userName){
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
       partner  = toTitleCase(rawPartner);
+      observer = 'Yok';
     }
 
     const matchName = homeTeam && awayTeam
       ? (homeTeam + ' – ' + awayTeam)
       : (venue || category || 'Arşiv Maçı');
-    found.push({ date:dateStr, time, homeTeam, awayTeam, category, venue, role, partner:partner||'', name:matchName, matchType });
+    found.push({ date:dateStr, time, homeTeam, awayTeam, category, venue, role, partner:partner||'', observer:observer||'Yok', name:matchName, matchType });
   }
   return found;
 }
