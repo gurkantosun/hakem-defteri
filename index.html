@@ -1072,6 +1072,8 @@ async function initApp(){
   }catch(e){console.error('Maçlar yüklenemedi:',e);matches=[];}
   // Tarihe göre sırala (en yeni en üstte)
   sortMatchesArray();
+  // Tarihi geçmiş "yaklaşan" maçları otomatik geçmişe al
+  await autoMarkOverdueMatches();
   document.getElementById('loading-overlay').style.display='none';
   document.getElementById('app-screen').style.display='block';
   initDateSelectors();
@@ -1088,9 +1090,20 @@ async function initApp(){
   }, 1500);
 }
 
-// ════════════════════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════════════════════
+async function autoMarkOverdueMatches(){
+  const today = todayStr();
+  // upcoming:true ama tarihi geçmiş (bugün dahil saat geçtiyse) → upcoming:false yap
+  const overdue = matches.filter(m => m.upcoming === true && m.date < today);
+  for(const m of overdue){
+    try{
+      await window._FB.updateMatch(currentUser.uid, m.id, {...m, upcoming:false});
+      const idx = matches.findIndex(x=>x.id===m.id);
+      if(idx>=0) matches[idx] = {...m, upcoming:false};
+    }catch(e){ console.error('autoMark hatası:', e); }
+  }
+}
+
+
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const isFuture=m=>m.upcoming===true&&m.date>=todayStr();
 const isOverdue=m=>m.upcoming===true&&m.date<todayStr();
@@ -1264,8 +1277,12 @@ async function saveMatch(){
       if(matchType==='okul'&&matchStatus==='managed')document.getElementById('duplicate-btn').style.display='inline-flex';
       showToast('✅ Maç kaydedildi!');
       saveBtn.textContent='✅ Kaydedildi!';
-      setTimeout(()=>{ saveBtn.textContent='✅ Kaydet'; }, 2000);
+      saveBtn.disabled=false;
+      setTimeout(()=>{ saveBtn.textContent='✅ Kaydet'; }, 2500);
       resetFormFields();
+      sortMatchesArray();
+      updateHeaderStats();renderDashboard();renderMatches();renderCalendar();
+      return; // finally'deki reset'i bypass et
     }
     sortMatchesArray();
     updateHeaderStats();renderDashboard();renderMatches();renderCalendar();
@@ -1519,7 +1536,7 @@ function openMatchDetail(id){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;flex-wrap:wrap;">
       <div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;">${m.name||'Maç'}</div>
-        <div style="color:var(--text3);font-size:10px;margin-top:2px;">${m.date||''}${m.time?' · '+m.time:''} · ${m.role||'—'}</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:2px;">${m.date||''}${m.time?' · '+m.time:''}</div>
         <div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap;">
           ${m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:m.matchType==='ozellig'?`<span class="badge" style="background:rgba(61,184,160,.13);color:var(--accent3);">⭐ ${m.category||'Özel Lig'}</span>`:`<span class="badge badge-bolge">🏆 ${m.category||'Bölge'}</span>`}
           ${m.role?`<span class="badge badge-role">${m.role}</span>`:''}
