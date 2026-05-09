@@ -1467,8 +1467,8 @@ function matchCardHTML(m){
   let tb, cardTitle;
   if(m.matchType==='okul'){
     // Okul: üstte organizasyon (homeTeam), altta grup kodu (category)
-    cardTitle = m.homeTeam || m.name || 'Okul Maçı';
-    const grp = m.category || '';
+    cardTitle = (m.homeTeam || m.name || 'Okul Maçı').toUpperCase();
+    const grp = (m.category || '').toUpperCase();
     tb = `<span class="badge badge-okul">🏫 ${grp||cardTitle}</span>`;
   } else if(m.matchType==='ozellig'){
     // Özel Lig: üstte takımlar, altta organizasyon — kategori
@@ -1816,8 +1816,8 @@ function parseRowsToMatches(rows, matchType, userName){
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[1]||'').trim();
       awayTeam = '';
-      homeTeam = toTitleCase(String(row[3]||'').trim());
-      const cat = String(row[4]||'').trim();
+      homeTeam = String(row[3]||'').trim().toUpperCase();
+      const cat = String(row[4]||'').trim().toUpperCase();
       category = cat;
       venue    = String(row[2]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
@@ -2432,6 +2432,80 @@ async function saveAllSyncMatches(){
   renderSyncResults(); updateHeaderStats(); renderDashboard(); renderMatches();
   document.getElementById('sync-results').style.display='none';
   showToast('✅ '+saved+' atama kaydedildi!');
+}
+
+function findExistingMatch(m){
+  return matches.find(x =>
+    x.date === m.date && x.time === m.time &&
+    (!m.matchType || !x.matchType || m.matchType === x.matchType)
+  ) || null;
+}
+
+function parseRowsToMatchesAll(rows, matchType, userName){
+  const found = [];
+  const name = userName.toUpperCase();
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 2) continue;
+    let h1, h2, dateStr, time, homeTeam='', awayTeam='', category='', venue='', role='', partner='', observer='Yok';
+
+    if(matchType === 'ozellig'){
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[2]||'').trim();
+      homeTeam = String(row[3]||'').trim();
+      awayTeam = String(row[4]||'').trim();
+      category = [String(row[5]||'').trim(), String(row[6]||'').trim()].filter(Boolean).join(' — ');
+      venue    = String(row[1]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      partner  = toTitleCase(h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim());
+      const g  = String(row[12]||'').trim();
+      observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
+
+    } else if(matchType === 'okul'){
+      if(row.length < 7) continue;
+      h1 = String(row[5]||'').toUpperCase().trim();
+      h2 = String(row[6]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[1]||'').trim();
+      homeTeam = String(row[3]||'').trim().toUpperCase();
+      category = String(row[4]||'').trim().toUpperCase();
+      awayTeam = '';
+      venue    = String(row[2]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      partner  = toTitleCase(h1.includes(name) ? String(row[6]||'').trim() : String(row[5]||'').trim());
+      const g  = String(row[12]||'').trim();
+      observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
+
+    } else { // bolge
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[2]||'').trim();
+      homeTeam = String(row[3]||'').trim();
+      awayTeam = String(row[4]||'').trim();
+      category = mapCategory(String(row[5]||'').trim());
+      venue    = String(row[1]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      partner  = toTitleCase(h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim());
+      const g  = String(row[12]||'').trim();
+      observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
+    }
+
+    if(!dateStr) continue;
+    const matchName = matchType === 'okul'
+      ? (homeTeam || venue || 'Okul Maçı')
+      : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : category || 'Maç');
+    const isUpcoming = isFutureDate(dateStr);
+    found.push({ date:dateStr, time, matchType, homeTeam, awayTeam, category, venue, role, partner, observer, name:matchName, upcoming:isUpcoming });
+  }
+  return found;
 }
 
 </script>
