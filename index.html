@@ -1467,12 +1467,10 @@ function matchCardHTML(m){
   // Badge ve başlık mantığı maç türüne göre
   let tb, cardTitle;
   if(m.matchType==='okul'){
-    // Okul: üstte organizasyon, altta kategori (grup)
-    const catParts = (m.category||'').split(' — ');
-    const org = catParts[0] || 'Okul';
-    const grp = catParts[1] || '';
-    cardTitle = org;
-    tb = `<span class="badge badge-okul">🏫 ${grp||org}</span>`;
+    // Okul: üstte organizasyon (homeTeam), altta grup kodu (category)
+    cardTitle = m.homeTeam || m.name || 'Okul Maçı';
+    const grp = m.category || '';
+    tb = `<span class="badge badge-okul">🏫 ${grp||cardTitle}</span>`;
   } else if(m.matchType==='ozellig'){
     // Özel Lig: üstte takımlar, altta organizasyon — kategori
     cardTitle = (m.homeTeam && m.awayTeam) ? (m.homeTeam + ' — ' + m.awayTeam) : (m.name||'Özel Lig');
@@ -1798,14 +1796,13 @@ function parseRowsToMatches(rows, matchType, userName){
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim();
+      homeTeam = String(row[3]||'').trim(); // sheet'teki gibi büyük harf
       awayTeam = String(row[4]||'').trim();
       const org = String(row[5]||'').trim();
       const cat = String(row[6]||'').trim();
       category = [org, cat].filter(Boolean).join(' — ');
       venue    = String(row[1]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
-      // Partner: diğer hakem (baş harf formatına çevir)
       const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
       partner = toTitleCase(rawPartner);
 
@@ -1818,11 +1815,10 @@ function parseRowsToMatches(rows, matchType, userName){
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[1]||'').trim();
-      homeTeam = '';
       awayTeam = '';
-      const org = String(row[3]||'').trim();
+      homeTeam = toTitleCase(String(row[3]||'').trim()); // Organizasyon → kart başlığı
       const cat = String(row[4]||'').trim();
-      category = [org, cat].filter(Boolean).join(' — ');
+      category = cat; // Grup kodu (YE, GE, KK vb.)
       venue    = String(row[2]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
@@ -1837,7 +1833,7 @@ function parseRowsToMatches(rows, matchType, userName){
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim();
+      homeTeam = String(row[3]||'').trim(); // sheet'teki gibi büyük harf
       awayTeam = String(row[4]||'').trim();
       category = mapCategory(String(row[5]||'').trim());
       venue    = String(row[1]||'').trim();
@@ -1849,9 +1845,9 @@ function parseRowsToMatches(rows, matchType, userName){
       observer = gozlemciRaw ? 'Var — ' + toTitleCase(gozlemciRaw) : 'Yok';
     }
 
-    const matchName = homeTeam && awayTeam
-      ? (homeTeam + ' – ' + awayTeam)
-      : (venue || category || 'Okul Maçı');
+    const matchName = (matchType === 'okul')
+      ? (homeTeam || venue || 'Okul Maçı')
+      : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : (venue || category || 'Maç'));
     found.push({ date: dateStr, time, homeTeam, awayTeam, category, venue, role, partner: partner||'', observer: observer||'Yok', name: matchName, matchType });
   }
   return found;
@@ -2008,9 +2004,12 @@ async function autoSyncOnLoad(){
       if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
+      // Sadece yaklaşan (upcoming) kayıtlı maçlarla karşılaştır
+      // Böylece silinen atama yeniden "yeni" olarak görünür
+      const upcomingMatches = matches.filter(x => x.upcoming);
       const newOnes = found.filter(m => {
         if(m.matchType === 'okul'){
-          return !matches.some(x =>
+          return !upcomingMatches.some(x =>
             x.matchType === 'okul' &&
             x.date === m.date &&
             x.time === m.time &&
@@ -2018,7 +2017,7 @@ async function autoSyncOnLoad(){
             x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
           );
         }
-        return !matches.some(x => x.date === m.date && x.time === m.time);
+        return !upcomingMatches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
 
@@ -2115,8 +2114,8 @@ function parseRowsToMatchesAll(rows, matchType, userName){
       if(!h1.includes(name) && !h2.includes(name)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       time     = String(row[2]||'').trim();
-      homeTeam = toTitleCase(String(row[3]||'').trim());
-      awayTeam = toTitleCase(String(row[4]||'').trim());
+      homeTeam = String(row[3]||'').trim(); // büyük harf korunur
+      awayTeam = String(row[4]||'').trim();
       const org = String(row[5]||'').trim();
       const cat = String(row[6]||'').trim();
       category = [org, cat].filter(Boolean).join(' — ');
@@ -2154,8 +2153,8 @@ function parseRowsToMatchesAll(rows, matchType, userName){
       if(!h1.includes(name) && !h2.includes(name)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       time     = String(row[2]||'').trim();
-      homeTeam = toTitleCase(String(row[3]||'').trim());
-      awayTeam = toTitleCase(String(row[4]||'').trim());
+      homeTeam = String(row[3]||'').trim(); // büyük harf korunur
+      awayTeam = String(row[4]||'').trim();
       category = mapCategory(String(row[5]||'').trim());
       venue    = String(row[1]||'').trim();
       role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
@@ -2170,7 +2169,8 @@ function parseRowsToMatchesAll(rows, matchType, userName){
       ? (homeTeam || venue || 'Okul Maçı')
       : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : (category || 'Maç'));
 
-    found.push({ date: dateStr, time, matchType, homeTeam, awayTeam, category, venue, role, partner, observer, name: matchName });
+    const isUpcoming = isFutureDate(dateStr);
+    found.push({ date: dateStr, time, matchType, homeTeam, awayTeam, category, venue, role, partner, observer, name: matchName, upcoming: isUpcoming });
   }
   return found;
 }
@@ -2199,7 +2199,7 @@ async function runArsivScan(){
           if(changed){ try{ await window._FB.updateMatch(currentUser.uid,existing.id,updated); const idx=matches.findIndex(x=>x.id===existing.id); if(idx>=0)matches[idx]={id:existing.id,...updated}; totalUpdated++; }catch(e){console.error(e);} }
           else totalSkipped++;
         } else {
-          const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,homeTeam:m.homeTeam,awayTeam:m.awayTeam,league:'',score:'',venue:m.venue,role:m.role,partners:m.partner||'',observer:m.observer||'Yok',rating:0,errors:[],comment:'',keymom:'',upcoming:false};
+          const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,homeTeam:m.homeTeam,awayTeam:m.awayTeam,league:'',score:'',venue:m.venue,role:m.role,partners:m.partner||'',observer:m.observer||'Yok',rating:0,errors:[],comment:'',keymom:'',upcoming:!!m.upcoming};
           try{ const newId=await window._FB.addMatch(currentUser.uid,obj); matches.unshift({id:newId,...obj}); totalSaved++; }catch(e){console.error(e);}
         }
       }
