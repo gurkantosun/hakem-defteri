@@ -791,7 +791,6 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
     <div class="section-title" style="margin-bottom:6px;">🗂️ Arşiv Taraması</div>
     <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Geçmiş sezon arşivlerini tara — sana ait oynanan maçları otomatik geçmiş olarak kaydet. Zaten kayıtlı maçlar tekrar eklenmez.</p>
     <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#5a4a00,#7a6500);" id="sync-arsiv-btn" onclick="runArsivScan()">🗂️ Arşivi Tara</button>
-    <button class="btn" style="width:100%;margin-top:6px;background:rgba(220,50,50,.15);border:1px solid rgba(220,50,50,.3);color:#e07070;font-size:11px;" onclick="deduplicateMatches()">🧹 Tekrar Kayıtları Temizle</button>
     <div id="sync-arsiv-status" style="font-size:11px;color:var(--text3);margin-top:6px;min-height:14px;"></div>
   </div>
 
@@ -1796,13 +1795,14 @@ function parseRowsToMatches(rows, matchType, userName){
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim(); // sheet'teki gibi büyük harf
+      homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
       const org = String(row[5]||'').trim();
       const cat = String(row[6]||'').trim();
       category = [org, cat].filter(Boolean).join(' — ');
       venue    = String(row[1]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
+      // Partner: diğer hakem (baş harf formatına çevir)
       const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
       partner = toTitleCase(rawPartner);
 
@@ -1816,9 +1816,9 @@ function parseRowsToMatches(rows, matchType, userName){
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[1]||'').trim();
       awayTeam = '';
-      homeTeam = toTitleCase(String(row[3]||'').trim()); // Organizasyon → kart başlığı
+      homeTeam = toTitleCase(String(row[3]||'').trim());
       const cat = String(row[4]||'').trim();
-      category = cat; // Grup kodu (YE, GE, KK vb.)
+      category = cat;
       venue    = String(row[2]||'').trim();
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
@@ -1833,7 +1833,7 @@ function parseRowsToMatches(rows, matchType, userName){
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim(); // sheet'teki gibi büyük harf
+      homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
       category = mapCategory(String(row[5]||'').trim());
       venue    = String(row[1]||'').trim();
@@ -2004,8 +2004,6 @@ async function autoSyncOnLoad(){
       if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
-      // Sadece yaklaşan (upcoming) kayıtlı maçlarla karşılaştır
-      // Böylece silinen atama yeniden "yeni" olarak görünür
       const upcomingMatches = matches.filter(x => x.upcoming);
       const newOnes = found.filter(m => {
         if(m.matchType === 'okul'){
@@ -2081,101 +2079,6 @@ function showSyncNotification(allNew, anyProgramChanged){
 // ARŞİV TARAMA
 // ════════════════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════════════
-// ARŞİV YARDIMCI FONKSİYONLARI
-// ════════════════════════════════════════════════════════════
-
-// Mevcut kayıtlı maçla eşleştir — tarih + saat yeterli (matchType opsiyonel)
-function findExistingMatch(m){
-  return matches.find(x => {
-    if(x.date !== m.date) return false;
-    if(x.time !== m.time) return false;
-    // matchType varsa kontrol et
-    if(m.matchType && x.matchType && m.matchType !== x.matchType) return false;
-    return true;
-  }) || null;
-}
-
-// Arşiv taraması için: geçmiş tarihleri de dahil eder (isFutureDate kontrolü yok)
-function parseRowsToMatchesAll(rows, matchType, userName){
-  const found = [];
-  const name = userName.toUpperCase();
-
-  for(let i = 1; i < rows.length; i++){
-    const row = rows[i];
-    if(!row || row.length < 2) continue;
-
-    let h1, h2, dateStr, time, homeTeam='', awayTeam='', category='', venue='', role='', partner='', observer='Yok';
-
-    if(matchType === 'ozellig'){
-      if(row.length < 9) continue;
-      h1 = String(row[7]||'').toUpperCase().trim();
-      h2 = String(row[8]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim(); // büyük harf korunur
-      awayTeam = String(row[4]||'').trim();
-      const org = String(row[5]||'').trim();
-      const cat = String(row[6]||'').trim();
-      category = [org, cat].filter(Boolean).join(' — ');
-      venue    = String(row[1]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawP = h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim();
-      partner  = toTitleCase(rawP);
-      const gozRaw = String(row[12]||'').trim();
-      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
-
-    } else if(matchType === 'okul'){
-      // A=Tarih B=Saat C=Salon D=Organizasyon E=Grup F=Hakem1 G=Hakem2
-      if(row.length < 7) continue;
-      h1 = String(row[5]||'').toUpperCase().trim();
-      h2 = String(row[6]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      time     = String(row[1]||'').trim();
-      const org = String(row[3]||'').trim();
-      const cat = String(row[4]||'').trim();
-      homeTeam = toTitleCase(org); // organizasyon = kart başlığı
-      awayTeam = '';
-      category = cat;              // grup kodu = kategori badge
-      venue    = String(row[2]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawP = h1.includes(name) ? String(row[6]||'').trim() : String(row[5]||'').trim();
-      partner  = toTitleCase(rawP);
-      const gozRaw = String(row[12]||'').trim();
-      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
-
-    } else { // bolge
-      if(row.length < 9) continue;
-      h1 = String(row[7]||'').toUpperCase().trim();
-      h2 = String(row[8]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim(); // büyük harf korunur
-      awayTeam = String(row[4]||'').trim();
-      category = mapCategory(String(row[5]||'').trim());
-      venue    = String(row[1]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawP = h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim();
-      partner  = toTitleCase(rawP);
-      const gozRaw = String(row[12]||'').trim();
-      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
-    }
-
-    if(!dateStr) continue;
-    const matchName = (matchType === 'okul')
-      ? (homeTeam || venue || 'Okul Maçı')
-      : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : (category || 'Maç'));
-
-    const isUpcoming = isFutureDate(dateStr);
-    found.push({ date: dateStr, time, matchType, homeTeam, awayTeam, category, venue, role, partner, observer, name: matchName, upcoming: isUpcoming });
-  }
-  return found;
-}
-
-
 async function runArsivScan(){
   const userName = getUserNameUpper();
   if(!userName){ showToast('⚠️ Profil bilgisi eksik!'); return; }
@@ -2199,7 +2102,7 @@ async function runArsivScan(){
           if(changed){ try{ await window._FB.updateMatch(currentUser.uid,existing.id,updated); const idx=matches.findIndex(x=>x.id===existing.id); if(idx>=0)matches[idx]={id:existing.id,...updated}; totalUpdated++; }catch(e){console.error(e);} }
           else totalSkipped++;
         } else {
-          const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,homeTeam:m.homeTeam,awayTeam:m.awayTeam,league:'',score:'',venue:m.venue,role:m.role,partners:m.partner||'',observer:m.observer||'Yok',rating:0,errors:[],comment:'',keymom:'',upcoming:!!m.upcoming};
+          const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,homeTeam:m.homeTeam,awayTeam:m.awayTeam,league:'',score:'',venue:m.venue,role:m.role,partners:m.partner||'',observer:m.observer||'Yok',rating:0,errors:[],comment:'',keymom:'',upcoming:false};
           try{ const newId=await window._FB.addMatch(currentUser.uid,obj); matches.unshift({id:newId,...obj}); totalSaved++; }catch(e){console.error(e);}
         }
       }
@@ -2467,6 +2370,69 @@ function renderUcretTab(){
   }).join('');
 }
 
+
+function renderSyncResults(){
+  const listEl = document.getElementById('sync-match-list');
+  if(!listEl) return;
+  if(!syncFoundMatches.length){
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0;">Gösterilecek yeni atama yok.</div>';
+    return;
+  }
+  const DAYS = ['Paz','Pts','Sal','Çar','Per','Cum','Cmt'];
+  listEl.innerHTML = syncFoundMatches.map(function(m,i){
+    const d = new Date((m.date||'2000-01-01')+'T00:00:00');
+    const dayStr = DAYS[d.getDay()];
+    const parts = (m.date||'').split('-');
+    const dd=parts[2]||'?';
+    const typeLbl = m.matchType==='ozellig' ? 'Özel Lig' : m.matchType==='okul' ? 'Okul' : 'Bölge';
+    const tc = m.matchType==='ozellig' ? 'var(--accent)' : m.matchType==='okul' ? 'var(--accent3)' : 'var(--warn)';
+    const meta = (m.time?'⏰ '+m.time+' ':'')+( m.venue?'· '+m.venue+' ':'')+(m.role?'· '+m.role:'');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">'
+      +'<div style="text-align:center;min-width:36px;"><div style="font-family:Bebas Neue,sans-serif;font-size:17px;line-height:1;color:var(--accent);">'+dd+'</div>'
+      +'<div style="font-size:8px;color:var(--text3);">'+dayStr+'</div></div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--text);">'+(m.name||'Maç')+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);"><span style="color:'+tc+';">'+typeLbl+'</span> '+meta+'</div></div>'
+      +'<button onclick="saveSingleSyncMatch('+i+')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent);background:rgba(245,166,35,.1);color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">Kaydet</button>'
+      +'</div>';
+  }).join('');
+}
+
+async function saveSingleSyncMatch(idx){
+  const m = syncFoundMatches[idx];
+  if(!m) return;
+  try{
+    const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
+      homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
+      role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
+      rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+    const newId=await window._FB.addMatch(currentUser.uid,obj);
+    matches.unshift({id:newId,...obj});
+    syncFoundMatches.splice(idx,1);
+    renderSyncResults(); updateHeaderStats(); renderDashboard();
+    showToast('✅ Atama kaydedildi!');
+    if(!syncFoundMatches.length) document.getElementById('sync-results').style.display='none';
+  }catch(e){showToast('❌ Kayıt hatası: '+e.message);}
+}
+
+async function saveAllSyncMatches(){
+  if(!syncFoundMatches.length){showToast('Kaydedilecek atama yok.');return;}
+  let saved=0;
+  for(const m of [...syncFoundMatches]){
+    try{
+      const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
+        homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
+        role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
+        rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+      const newId=await window._FB.addMatch(currentUser.uid,obj);
+      matches.unshift({id:newId,...obj}); saved++;
+    }catch(e){console.error(e);}
+  }
+  syncFoundMatches=[];
+  renderSyncResults(); updateHeaderStats(); renderDashboard(); renderMatches();
+  document.getElementById('sync-results').style.display='none';
+  showToast('✅ '+saved+' atama kaydedildi!');
+}
 
 </script>
 </body>
