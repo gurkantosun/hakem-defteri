@@ -2571,7 +2571,10 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
     }
 
     if(!dateStr) continue;
-    if(pastOnly && dateStr >= today) continue; // sadece geçmiş maçlar
+    if(pastOnly){
+      const matchDateTime = new Date((dateStr + 'T' + (time||'23:59')).replace(/\./g,':'));
+      if(matchDateTime > new Date()) continue; // henüz geçmemiş maçları atla
+    }
     const matchName = matchType === 'okul'
       ? (homeTeam || venue || 'Okul Maçı')
       : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : category || 'Maç');
