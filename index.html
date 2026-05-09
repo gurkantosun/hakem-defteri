@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -2082,6 +2081,100 @@ function showSyncNotification(allNew, anyProgramChanged){
 // ════════════════════════════════════════════════════════════
 // ARŞİV TARAMA
 // ════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+// ARŞİV YARDIMCI FONKSİYONLARI
+// ════════════════════════════════════════════════════════════
+
+// Mevcut kayıtlı maçla eşleştir — tarih + saat yeterli (matchType opsiyonel)
+function findExistingMatch(m){
+  return matches.find(x => {
+    if(x.date !== m.date) return false;
+    if(x.time !== m.time) return false;
+    // matchType varsa kontrol et
+    if(m.matchType && x.matchType && m.matchType !== x.matchType) return false;
+    return true;
+  }) || null;
+}
+
+// Arşiv taraması için: geçmiş tarihleri de dahil eder (isFutureDate kontrolü yok)
+function parseRowsToMatchesAll(rows, matchType, userName){
+  const found = [];
+  const name = userName.toUpperCase();
+
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 2) continue;
+
+    let h1, h2, dateStr, time, homeTeam='', awayTeam='', category='', venue='', role='', partner='', observer='Yok';
+
+    if(matchType === 'ozellig'){
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[2]||'').trim();
+      homeTeam = toTitleCase(String(row[3]||'').trim());
+      awayTeam = toTitleCase(String(row[4]||'').trim());
+      const org = String(row[5]||'').trim();
+      const cat = String(row[6]||'').trim();
+      category = [org, cat].filter(Boolean).join(' — ');
+      venue    = String(row[1]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawP = h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner  = toTitleCase(rawP);
+      const gozRaw = String(row[12]||'').trim();
+      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
+
+    } else if(matchType === 'okul'){
+      // A=Tarih B=Saat C=Salon D=Organizasyon E=Grup F=Hakem1 G=Hakem2
+      if(row.length < 7) continue;
+      h1 = String(row[5]||'').toUpperCase().trim();
+      h2 = String(row[6]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[1]||'').trim();
+      const org = String(row[3]||'').trim();
+      const cat = String(row[4]||'').trim();
+      homeTeam = toTitleCase(org); // organizasyon = kart başlığı
+      awayTeam = '';
+      category = cat;              // grup kodu = kategori badge
+      venue    = String(row[2]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawP = h1.includes(name) ? String(row[6]||'').trim() : String(row[5]||'').trim();
+      partner  = toTitleCase(rawP);
+      const gozRaw = String(row[12]||'').trim();
+      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
+
+    } else { // bolge
+      if(row.length < 9) continue;
+      h1 = String(row[7]||'').toUpperCase().trim();
+      h2 = String(row[8]||'').toUpperCase().trim();
+      if(!h1.includes(name) && !h2.includes(name)) continue;
+      dateStr  = parseTurkishDate(String(row[0]||''));
+      time     = String(row[2]||'').trim();
+      homeTeam = toTitleCase(String(row[3]||'').trim());
+      awayTeam = toTitleCase(String(row[4]||'').trim());
+      category = mapCategory(String(row[5]||'').trim());
+      venue    = String(row[1]||'').trim();
+      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      const rawP = h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim();
+      partner  = toTitleCase(rawP);
+      const gozRaw = String(row[12]||'').trim();
+      observer = gozRaw ? 'Var — ' + toTitleCase(gozRaw) : 'Yok';
+    }
+
+    if(!dateStr) continue;
+    const matchName = (matchType === 'okul')
+      ? (homeTeam || venue || 'Okul Maçı')
+      : (homeTeam && awayTeam ? homeTeam + ' – ' + awayTeam : (category || 'Maç'));
+
+    found.push({ date: dateStr, time, matchType, homeTeam, awayTeam, category, venue, role, partner, observer, name: matchName });
+  }
+  return found;
+}
+
 
 async function runArsivScan(){
   const userName = getUserNameUpper();
