@@ -1262,7 +1262,9 @@ async function saveMatch(){
       const newId=await window._FB.addMatch(currentUser.uid,obj);
       matches.unshift({id:newId,...obj});
       if(matchType==='okul'&&matchStatus==='managed')document.getElementById('duplicate-btn').style.display='inline-flex';
-      showToast('✅ Kaydedildi!');
+      showToast('✅ Maç kaydedildi!');
+      saveBtn.textContent='✅ Kaydedildi!';
+      setTimeout(()=>{ saveBtn.textContent='✅ Kaydet'; }, 2000);
       resetFormFields();
     }
     sortMatchesArray();
@@ -1547,11 +1549,45 @@ async function deleteMatch(id){
     matches=matches.filter(m=>m.id!==id);
     closeModal();updateHeaderStats();renderDashboard();renderMatches();renderCalendar();renderAnalysis();
     showToast('🗑️ Silindi.');
-    // Yaklaşan Özel Lig veya Okul maçıysa, kayıtlı tarama durumunu sıfırla ve yeniden tara
-    if(deleted && deleted.upcoming && (deleted.matchType==='ozellig'||deleted.matchType==='okul')){
-      // Tarama önbelleğini sıfırla ki "yeni atama" olarak yakalansın
-      localStorage.removeItem('hd_scan_' + deleted.matchType);
-      setTimeout(()=>autoSyncOnLoad(), 800);
+    if(deleted && deleted.upcoming){
+      if(deleted.matchType==='ozellig'||deleted.matchType==='okul'){
+        localStorage.removeItem('hd_scan_' + deleted.matchType);
+        setTimeout(()=>autoSyncOnLoad(), 800);
+      } else if(deleted.matchType==='bolge'){
+        // Bölge: arşivdeki linkleri tara, silinen maçın tarihi hangi haftaya denk geliyorsa bul
+        setTimeout(async ()=>{
+          const userName = getUserNameUpper();
+          if(!userName) return;
+          try{
+            const settings = await window._FB.loadSettings(currentUser.uid);
+            const bolgeArchive = settings.bolgeArchive || [];
+            const currentBolge = settings.bolgeUrl || localStorage.getItem('hd_bolge_url') || '';
+            if(currentBolge && !bolgeArchive.includes(currentBolge)) bolgeArchive.push(currentBolge);
+            // Tüm bölge linklerini tara, silinen maçı bul
+            let found = false;
+            for(const url of bolgeArchive){
+              const sheetId = sheetIdFromUrl(url);
+              const gid = gidFromUrl(url);
+              if(!sheetId) continue;
+              try{
+                const rows = await fetchSheetData(sheetId, gid);
+                const results = parseRowsToMatches(rows, 'bolge', userName);
+                const match = results.find(m => m.date === deleted.date && m.time === deleted.time);
+                if(match){
+                  // Maçı bul, yaklaşan olarak tekrar ekle
+                  syncFoundMatches = [match];
+                  renderSyncResults();
+                  document.getElementById('sync-results').style.display = 'block';
+                  showSyncNotification([match], false);
+                  found = true;
+                  break;
+                }
+              }catch(e){}
+            }
+            if(!found) showToast('ℹ️ Bölge programında maç bulunamadı.');
+          }catch(e){ console.error(e); }
+        }, 800);
+      }
     }
   }catch(e){showToast('❌ Silinemedi: '+e.message);}
 }
