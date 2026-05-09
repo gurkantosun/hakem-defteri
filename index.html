@@ -2066,10 +2066,10 @@ async function autoSyncOnLoad(){
       if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
-      const upcomingMatches = matches.filter(x => x.upcoming);
       const newOnes = found.filter(m => {
+        // Kayıtlı mı? upcoming veya geçmiş — tüm maçlara bak
         if(m.matchType === 'okul'){
-          return !upcomingMatches.some(x =>
+          return !matches.some(x =>
             x.matchType === 'okul' &&
             x.date === m.date &&
             x.time === m.time &&
@@ -2077,7 +2077,7 @@ async function autoSyncOnLoad(){
             x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
           );
         }
-        return !upcomingMatches.some(x => x.date === m.date && x.time === m.time);
+        return !matches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
 
