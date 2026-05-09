@@ -1942,7 +1942,8 @@ async function autoSyncOnLoad(){
   if(indicator) indicator.style.display = 'flex';
 
   let allNew = [];
-  let programChanged = false;
+  let anyProgramChanged = false;
+
   // Bölge linki kaydedilmişse onu da tara
   const bolgeUrl = localStorage.getItem('hd_bolge_url') || '';
   const types = bolgeUrl ? ['bolge','ozellig','okul'] : ['ozellig','okul'];
@@ -1958,7 +1959,7 @@ async function autoSyncOnLoad(){
         gid = gidFromUrl(bolgeUrl);
       } else {
         sheetId = SYNC_SHEETS[type].id;
-        gid = SYNC_SHEETS[type].gid;
+        gid     = SYNC_SHEETS[type].gid;
       }
       const rows = await fetchSheetData(sheetId, gid);
 
@@ -1966,6 +1967,7 @@ async function autoSyncOnLoad(){
       const prevData = JSON.parse(localStorage.getItem(storeKey) || '{"totalRows":0,"filledRefs":0}');
       const totalRows = rows.length - 1;
 
+      // Dolu hakem hücre sayısını hesapla (boş yerler doldu mu?)
       let filledRefs = 0;
       for(let i = 1; i < rows.length; i++){
         const row = rows[i];
@@ -1974,6 +1976,10 @@ async function autoSyncOnLoad(){
         const h1 = String(row[h1col]||'').trim();
         if(h1) filledRefs++;
       }
+
+      // Program değişti mi? (yeni dolu hakem hücresi eklendi mi)
+      const programChanged = filledRefs > prevData.filledRefs || totalRows !== prevData.totalRows;
+      if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
       const newOnes = found.filter(m => {
@@ -1986,14 +1992,9 @@ async function autoSyncOnLoad(){
             x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
           );
         }
-        // Bölge / Özel Lig: tarih + saat eşleşiyorsa yeterli
         return !matches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
-
-      if(filledRefs > prevData.filledRefs || totalRows !== prevData.totalRows){
-        programChanged = true;
-      }
 
       localStorage.setItem(storeKey, JSON.stringify({ totalRows, filledRefs }));
 
@@ -2001,7 +2002,7 @@ async function autoSyncOnLoad(){
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
       if(statusEl) statusEl.textContent = newOnes.length
         ? '🔔 ' + newOnes.length + ' yeni atama var!'
-        : 'Yeni atama yok.';
+        : (programChanged ? '📋 Program güncellendi, sana atama yok.' : 'Değişiklik yok.');
 
     }catch(e){
       console.error('AutoSync hata ('+type+'):', e);
@@ -2014,10 +2015,10 @@ async function autoSyncOnLoad(){
   // Tarama göstergesini kapat
   if(indicator) indicator.style.display = 'none';
 
-  showSyncNotification(allNew, programChanged);
+  showSyncNotification(allNew, anyProgramChanged);
 }
 
-function showSyncNotification(allNew, programChanged){
+function showSyncNotification(allNew, anyProgramChanged){
   const notif   = document.getElementById('dashboard-notification');
   const text    = document.getElementById('dashboard-notification-text');
   const sub     = document.getElementById('dashboard-notification-sub');
@@ -2026,537 +2027,30 @@ function showSyncNotification(allNew, programChanged){
   if(!notif || !text) return;
 
   if(allNew.length > 0){
+    // Sana yeni atama var
     icon.textContent = '🏀';
-    text.textContent = allNew.length + ' yeni maç ataması bulundu!';
-    sub.textContent = allNew.length + ' ataman Atamalar sekmesinde seni bekliyor. İnceleyip onayladıklarını kaydedebilirsin.';
+    text.textContent = allNew.length + ' yeni maç atamanız var!';
+    sub.textContent  = allNew.length + ' ataman Atamalar sekmesinde seni bekliyor. İnceleyip onayladıklarını kaydedebilirsin.';
     gotoBtn.style.display = 'block';
     syncFoundMatches = allNew;
     renderSyncResults();
     document.getElementById('sync-results').style.display = 'block';
-  } else if(programChanged){
+  } else if(anyProgramChanged){
+    // Program güncellendi ama sana atama yok
     icon.textContent = '📋';
-    text.textContent = 'Program güncellendi, ancak sana atama yapılmadı.';
-    sub.textContent = 'Yeni hakem atamaları yapıldı ancak listende değişiklik yok.';
+    text.textContent = 'Program güncellendi, ancak sana atama yok.';
+    sub.textContent  = 'Yeni hakem atamaları yapıldı fakat sen listede yer almıyorsun.';
     gotoBtn.style.display = 'none';
   } else {
+    // Hiçbir değişiklik yok
     icon.textContent = '✅';
-    text.textContent = 'Yeni atama yok.';
-    sub.textContent = 'Maç programları tarandı — son taramadan bu yana sana ait yeni bir atama bulunamadı.';
+    text.textContent = 'Herhangi bir yeni atama yok.';
+    sub.textContent  = 'Maç programları tarandı — listende yeni bir değişiklik bulunamadı.';
     gotoBtn.style.display = 'none';
   }
 
   notif.style.display = 'flex';
 }
-
-function renderSyncResults(){
-  const list = document.getElementById('sync-match-list');
-  const title = document.getElementById('sync-results-title');
-  if(!list || !title) return;
-  title.textContent = syncFoundMatches.length + ' Yeni Atama Bulundu';
-  list.innerHTML = syncFoundMatches.map((m, i) => {
-    return '<div class="card" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + '</div>' +
-        '<div style="font-size:10px;color:var(--text3);margin-top:2px;">📅 ' + m.date + ' · 🕐 ' + m.time + ' · 📍 ' + m.venue + '</div>' +
-        '<div style="font-size:10px;color:var(--text3);">👤 ' + m.role + ' · 📂 ' + m.category + '</div>' +
-      '</div>' +
-      '<button class="btn btn-primary btn-sm" onclick="saveSyncMatch('+i+',this)" style="white-space:nowrap;">+ Kaydet</button>' +
-    '</div>';
-  }).join('');
-}
-
-async function saveSyncMatch(idx, btn){
-  const m = syncFoundMatches[idx];
-  if(!m) return;
-  // Zaten kaydedilmiş mi kontrol et (tarih + takımlar + saat)
-  const alreadySaved = m.matchType==='okul'
-    ? matches.some(x =>
-        x.matchType === 'okul' &&
-        x.date === m.date &&
-        x.time === m.time &&
-        x.venue && m.venue &&
-        x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
-      )
-    : matches.some(x => x.date === m.date && x.time === m.time);
-  if(alreadySaved){
-    btn.outerHTML = '<span style="font-size:10px;color:var(--good);white-space:nowrap;">✅ Kayıtlı</span>';
-    return;
-  }
-  btn.disabled = true; btn.textContent = '⏳';
-  const obj = {
-    date:m.date, time:m.time, matchType:m.matchType,
-    category:m.category, name:m.name,
-    homeTeam:m.homeTeam, awayTeam:m.awayTeam,
-    league:'', score:'', venue:m.venue,
-    role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
-    rating:0, errors:[], comment:'', keymom:'',
-    upcoming:true,
-  };
-  try{
-    const newId = await window._FB.addMatch(currentUser.uid, obj);
-    matches.unshift({id:newId,...obj});
-    sortMatchesArray();
-    updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar();
-    btn.outerHTML = '<span style="font-size:10px;color:var(--good);white-space:nowrap;">✅ Kayıtlı</span>';
-    showToast('✅ Atama kaydedildi!');
-  }catch(e){
-    showToast('❌ ' + e.message);
-    btn.disabled = false; btn.textContent = '+ Kaydet';
-  }
-}
-
-async function saveAllSyncMatches(){
-  const saveAllBtn = document.getElementById('sync-save-all-btn');
-  saveAllBtn.disabled = true; saveAllBtn.textContent = '⏳ Kaydediliyor...';
-
-  // Kaydedilecekleri başta bir kopyaya al
-  const toSave = syncFoundMatches.filter(m => {
-    if(m.matchType === 'okul'){
-      return !matches.some(x =>
-        x.matchType === 'okul' &&
-        x.date === m.date &&
-        x.time === m.time &&
-        x.venue && m.venue &&
-        x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
-      );
-    }
-    return !matches.some(x => x.date === m.date && x.time === m.time);
-  });
-
-  let saved = 0;
-  for(const m of toSave){
-    const obj = {
-      date:m.date, time:m.time, matchType:m.matchType,
-      category:m.category, name:m.name,
-      homeTeam:m.homeTeam, awayTeam:m.awayTeam,
-      league:'', score:'', venue:m.venue,
-      role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
-      rating:0, errors:[], comment:'', keymom:'',
-      upcoming:true,
-    };
-    try{
-      const newId = await window._FB.addMatch(currentUser.uid, obj);
-      matches.unshift({id:newId,...obj});
-      saved++;
-    }catch(e){ console.error(e); }
-  }
-
-  sortMatchesArray();
-  updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar();
-  showToast('✅ ' + saved + ' atama kaydedildi!');
-  saveAllBtn.disabled = false; saveAllBtn.textContent = '✅ Hepsini Kaydet';
-  syncFoundMatches = [];
-  document.getElementById('sync-results').style.display = 'none';
-}
-
-function isAlreadySaved(m){
-  return matches.some(x => {
-    if(x.date !== m.date) return false;
-    // Tarih + saat eşleşiyorsa yeterli — takım adı yazılmamış olabilir
-    if(x.time && m.time && x.time === m.time) return true;
-    // Saat yoksa salon + tür kontrolü
-    if(m.matchType === 'okul'){
-      return x.venue === m.venue && x.matchType === 'okul';
-    }
-    if(m.homeTeam && m.awayTeam && x.homeTeam && x.awayTeam){
-      return x.homeTeam.trim().toUpperCase() === m.homeTeam.trim().toUpperCase() &&
-             x.awayTeam.trim().toUpperCase() === m.awayTeam.trim().toUpperCase();
-    }
-    return x.venue === m.venue;
-  });
-}
-
-async function runArsivScan(){
-  const userName = getUserNameUpper();
-  if(!userName){ showToast('⚠️ Profil bilgisi eksik!'); return; }
-
-  const btn = document.getElementById('sync-arsiv-btn');
-  const statusEl = document.getElementById('sync-arsiv-status');
-  btn.disabled = true; btn.textContent = '⏳ Arşiv taranıyor...';
-  statusEl.textContent = 'Arşiv okunuyor...';
-
-  let totalFound = 0;
-  let totalSaved = 0;
-  let totalSkipped = 0;
-
-  // 1. Sabit arşiv dosyaları (Özel Lig + Okul)
-  const types = ['ozellig', 'okul'];
-  for(const type of types){
-    const label = type === 'ozellig' ? 'Özel Lig' : 'Okul';
-    statusEl.textContent = label + ' arşivi taranıyor...';
-    try{
-      const sh = ARSIV_SHEETS[type];
-      const rows = await fetchSheetData(sh.id, sh.gid);
-      const found = parseRowsToMatchesAll(rows, type, userName);
-      totalFound += found.length;
-      for(const m of found){
-        if(isAlreadySaved(m)){ totalSkipped++; continue; }
-        const obj = {
-          date:m.date, time:m.time, matchType:m.matchType,
-          category:m.category, name:m.name,
-          homeTeam:m.homeTeam, awayTeam:m.awayTeam,
-          league:'', score:'', venue:m.venue,
-          role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
-          rating:0, errors:[], comment:'', keymom:'',
-          upcoming:false,
-        };
-        try{
-          const newId = await window._FB.addMatch(currentUser.uid, obj);
-          matches.unshift({id:newId,...obj});
-          totalSaved++;
-        }catch(e){ console.error('Arşiv kayıt hatası:', e); }
-      }
-    }catch(e){
-      console.error(type + ' arşiv hatası:', e);
-    }
-  }
-
-  // 2. Kaydedilmiş bölge haftalık linkleri
-  try{
-    const settings = await window._FB.loadSettings(currentUser.uid);
-    const bolgeArchive = settings.bolgeArchive || [];
-    const currentBolge = settings.bolgeUrl || localStorage.getItem('hd_bolge_url') || '';
-    // Aktif link arşivde yoksa ekle
-    if(currentBolge && !bolgeArchive.includes(currentBolge)) bolgeArchive.push(currentBolge);
-
-    for(let i = 0; i < bolgeArchive.length; i++){
-      const url = bolgeArchive[i];
-      const sheetId = sheetIdFromUrl(url);
-      const gid = gidFromUrl(url);
-      if(!sheetId) continue;
-      statusEl.textContent = `Bölge arşivi taranıyor (${i+1}/${bolgeArchive.length})...`;
-      try{
-        const rows = await fetchSheetData(sheetId, gid);
-        const found = parseRowsToMatchesAll(rows, 'bolge', userName);
-        totalFound += found.length;
-        for(const m of found){
-          if(isAlreadySaved(m)){ totalSkipped++; continue; }
-          const obj = {
-            date:m.date, time:m.time, matchType:'bolge',
-            category:m.category, name:m.name,
-            homeTeam:m.homeTeam, awayTeam:m.awayTeam,
-            league:'', score:'', venue:m.venue,
-            role:m.role, partners:m.partner||'', observer:m.observer||'Yok',
-            rating:0, errors:[], comment:'', keymom:'',
-            upcoming:false,
-          };
-          try{
-            const newId = await window._FB.addMatch(currentUser.uid, obj);
-            matches.unshift({id:newId,...obj});
-            totalSaved++;
-          }catch(e){ console.error('Bölge arşiv kayıt hatası:', e); }
-        }
-      }catch(e){ console.error('Bölge linki okunamadı:', url, e); }
-    }
-  }catch(e){ console.error('Bölge arşiv listesi alınamadı:', e); }
-
-  if(totalSaved > 0){
-    sortMatchesArray();
-    updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar(); renderAnalysis();
-  }
-
-  statusEl.textContent = totalFound === 0
-    ? 'Arşivde sana ait maç bulunamadı.'
-    : totalSaved === 0
-      ? `✅ ${totalFound} maç bulundu — hepsi zaten kayıtlı (${totalSkipped} atlandı).`
-      : `✅ ${totalSaved} yeni geçmiş maç eklendi, ${totalSkipped} zaten kayıtlıydı.`;
-
-  if(totalSaved > 0) showToast('✅ Arşivden ' + totalSaved + ' maç eklendi!');
-
-  btn.disabled = false; btn.textContent = '🗂️ Arşivi Tara';
-}
-
-// Arşiv için: gelecek filtresi olmadan tüm satırları parse et
-function parseRowsToMatchesAll(rows, matchType, userName){
-  const found = [];
-  const name = userName.toUpperCase();
-  for(let i = 1; i < rows.length; i++){
-    const row = rows[i];
-    if(!row || row.length < 2) continue;
-    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner, observer;
-
-    if(matchType === 'ozellig'){
-      if(row.length < 9) continue;
-      h1 = String(row[7]||'').toUpperCase().trim();
-      h2 = String(row[8]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!dateStr) continue;
-      time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim();
-      awayTeam = String(row[4]||'').trim();
-      const org = String(row[5]||'').trim();
-      const cat = String(row[6]||'').trim();
-      category = [org, cat].filter(Boolean).join(' — ');
-      venue    = String(row[1]||'').trim();
-      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
-      partner  = toTitleCase(rawPartner);
-      observer = 'Yok';
-    } else if(matchType === 'bolge'){
-      // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem L=Gözlemci
-      if(row.length < 9) continue;
-      h1 = String(row[7]||'').toUpperCase().trim();
-      h2 = String(row[8]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!dateStr) continue;
-      time     = String(row[2]||'').trim();
-      homeTeam = String(row[3]||'').trim();
-      awayTeam = String(row[4]||'').trim();
-      category = mapCategory(String(row[5]||'').trim());
-      venue    = String(row[1]||'').trim();
-      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawPartner = h1 === name ? String(row[8]||'').trim() : String(row[7]||'').trim();
-      partner  = toTitleCase(rawPartner);
-      const gozlemciRaw = String(row[12]||'').trim();
-      observer = gozlemciRaw ? 'Var — ' + toTitleCase(gozlemciRaw) : 'Yok';
-    } else {
-      // okul: A=Tarih B=Saat C=Salon D=Organizasyon E=Kategori F=Hakem1 G=Hakem2
-      if(row.length < 7) continue;
-      h1 = String(row[5]||'').toUpperCase().trim();
-      h2 = String(row[6]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
-      dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!dateStr) continue;
-      time     = String(row[1]||'').trim();
-      homeTeam = '';
-      awayTeam = '';
-      const org = String(row[3]||'').trim();
-      const cat = String(row[4]||'').trim();
-      category = [org, cat].filter(Boolean).join(' — ');
-      venue    = String(row[2]||'').trim();
-      role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
-      const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
-      partner  = toTitleCase(rawPartner);
-      observer = 'Yok';
-    }
-
-    const matchName = homeTeam && awayTeam
-      ? (homeTeam + ' – ' + awayTeam)
-      : (venue || category || 'Arşiv Maçı');
-    found.push({ date:dateStr, time, homeTeam, awayTeam, category, venue, role, partner:partner||'', observer:observer||'Yok', name:matchName, matchType });
-  }
-  return found;
-}
-
-
-// ════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════
-// PARTNERS TAB — Hakem & Gözlemci İstatistikleri
-// ════════════════════════════════════════════════════════════
-function renderPartnersTab(){
-  const hakem = {}; // {isim: count}
-  const goz   = {}; // {isim: count}
-
-  for(const m of matches){
-    if(m.upcoming) continue; // sadece oynanan maçlar
-    // Partner hakem
-    const p = (m.partners || '').trim();
-    if(p && p !== '-' && p.toLowerCase() !== 'yok'){
-      // birden fazla partner virgülle ayrılmış olabilir
-      p.split(/[,;]/).map(s=>s.trim()).filter(Boolean).forEach(name=>{
-        hakem[name] = (hakem[name]||0) + 1;
-      });
-    }
-    // Gözlemci
-    const obs = (m.observer || '').trim();
-    if(obs && obs.toLowerCase() !== 'yok'){
-      // "Var — İsim Soyisim" formatını parse et
-      const rawName = obs.replace(/^var\s*[—\-–]\s*/i,'').trim();
-      if(rawName){
-        goz[rawName] = (goz[rawName]||0) + 1;
-      }
-    }
-  }
-
-  // Summary
-  const totalUniq = Object.keys(hakem).length;
-  const totalGoz  = Object.keys(goz).length;
-  const topPartner = Object.entries(hakem).sort((a,b)=>b[1]-a[1])[0];
-  document.getElementById('partners-summary').innerHTML =
-    `<div class="stat-box"><div class="stat-box-val" style="color:var(--accent);">${totalUniq}</div><div class="stat-box-lbl">Farklı Hakem</div></div>` +
-    `<div class="stat-box"><div class="stat-box-val" style="color:var(--accent3);">${totalGoz}</div><div class="stat-box-lbl">Farklı Gözlemci</div></div>` +
-    (topPartner ? `<div class="stat-box"><div class="stat-box-val" style="font-size:13px;color:var(--warn);">${topPartner[0].split(' ')[0]}</div><div class="stat-box-lbl">En Çok Birlikte</div></div>` : '');
-
-  // Hakem listesi
-  const hEl = document.getElementById('partners-hakem-list');
-  const sortedH = Object.entries(hakem).sort((a,b)=>b[1]-a[1]);
-  if(!sortedH.length){
-    hEl.innerHTML='<div class="empty-state"><p>Henüz birlikte çalışılan hakem verisi yok.</p></div>';
-  } else {
-    const maxH = sortedH[0][1];
-    hEl.innerHTML = sortedH.map(([name,cnt])=>`
-      <div style="margin-bottom:7px;">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
-          <span style="color:var(--text);font-weight:600;">${name}</span>
-          <span style="color:var(--accent);font-weight:700;">${cnt} maç</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${Math.round(cnt/maxH*100)}%;background:linear-gradient(90deg,var(--accent),#f7b93e);"></div></div>
-      </div>`).join('');
-  }
-
-  // Gözlemci listesi
-  const gEl = document.getElementById('partners-gozlemci-list');
-  const sortedG = Object.entries(goz).sort((a,b)=>b[1]-a[1]);
-  if(!sortedG.length){
-    gEl.innerHTML='<div class="empty-state"><p>Henüz gözlemci verisi yok.</p></div>';
-  } else {
-    const maxG = sortedG[0][1];
-    gEl.innerHTML = sortedG.map(([name,cnt])=>`
-      <div style="margin-bottom:7px;">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
-          <span style="color:var(--text);font-weight:600;">${name}</span>
-          <span style="color:var(--accent3);font-weight:700;">${cnt} maç</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${Math.round(cnt/maxG*100)}%;background:linear-gradient(90deg,var(--accent3),#5ed4be);"></div></div>
-      </div>`).join('');
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-// UCRET TAB — Ücret Hesabı
-// ════════════════════════════════════════════════════════════
-const UCRET_BOLGE  = 378.76;
-const UCRET_OKUL   = 378.76;
-const UCRET_OZEL   = 1200.00;
-
-let ucretFilter = 'all'; // 'all' | 'paid' | 'unpaid'
-
-function getMatchFee(m){
-  if(m.matchType === 'ozellig') return UCRET_OZEL;
-  return UCRET_BOLGE; // bolge + okul
-}
-
-function ucretFilterAll(){ ucretFilter='all'; renderUcretTab(); updateUcretFilterBtns(); }
-function ucretFilterPaid(){ ucretFilter='paid'; renderUcretTab(); updateUcretFilterBtns(); }
-function ucretFilterUnpaid(){ ucretFilter='unpaid'; renderUcretTab(); updateUcretFilterBtns(); }
-
-function updateUcretFilterBtns(){
-  ['all','paid','unpaid'].forEach(f=>{
-    const el = document.getElementById('ucret-f-'+f);
-    if(!el) return;
-    el.style.borderColor = ucretFilter===f ? 'var(--accent)' : '';
-    el.style.color = ucretFilter===f ? 'var(--accent)' : '';
-  });
-}
-
-// Grup key: tarih + maçtipi ayrı gruplar (bolge/okul/ozellig)
-function groupKey(m){ return (m.date||'') + '||' + (m.matchType||'bolge'); }
-function groupPaid(grpMatches){ return grpMatches.every(m => !!m.ucretOdendi); }
-
-async function toggleGrupOdendi(grpKey, currentPaid){
-  const newVal = !currentPaid;
-  const grpMatches = matches.filter(m => !m.upcoming && groupKey(m) === grpKey);
-  try{
-    await Promise.all(grpMatches.map(m =>
-      window._FB.updateMatch(currentUser.uid, m.id, { ucretOdendi: newVal })
-    ));
-    grpMatches.forEach(m => m.ucretOdendi = newVal);
-    renderUcretTab();
-    showToast(newVal ? '\u2705 Grup \u00f6dendi olarak i\u015faretlendi!' : '\u21a9\ufe0f Grup \u00f6denmedi olarak g\u00fcncellendi.');
-  } catch(e){
-    showToast('\u274c G\u00fcncelleme hatas\u0131: ' + e.message);
-  }
-}
-
-function renderUcretTab(){
-  const playedMatches = matches.filter(m => !m.upcoming);
-
-  let toplam = 0, odenen = 0, bekleyen = 0;
-  for(const m of playedMatches){
-    const fee = getMatchFee(m);
-    toplam += fee;
-    if(m.ucretOdendi) odenen += fee;
-    else bekleyen += fee;
-  }
-
-  const fmt = n => n.toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' \u20ba';
-  document.getElementById('ucret-toplam').textContent = fmt(toplam);
-  document.getElementById('ucret-odenen').textContent = fmt(odenen);
-  document.getElementById('ucret-bekleyen').textContent = fmt(bekleyen);
-  document.getElementById('ucret-mac-sayisi').textContent = playedMatches.length;
-
-  // Grupla: tarih + macTipi
-  const groupMap = {};
-  for(const m of playedMatches){
-    const k = groupKey(m);
-    if(!groupMap[k]) groupMap[k] = [];
-    groupMap[k].push(m);
-  }
-
-  // Filtre gruba gore
-  let groups = Object.entries(groupMap);
-  if(ucretFilter==='paid')   groups = groups.filter(([,ms]) => groupPaid(ms));
-  if(ucretFilter==='unpaid') groups = groups.filter(([,ms]) => !groupPaid(ms));
-
-  // Yeni once
-  groups.sort(([a],[b]) => b.localeCompare(a));
-
-  const listEl = document.getElementById('ucret-list');
-  if(!groups.length){
-    listEl.innerHTML='<div class="empty-state"><div class="empty-icon">\ud83d\udcb8</div><p>G\u00f6sterilecek ma\u00e7 yok.</p></div>';
-    return;
-  }
-
-  const MONTHS = ['OCA','\u015eUB','MAR','N\u0130S','MAY','HAZ','TEM','A\u011eU','EYL','EK\u0130','KAS','ARA'];
-  const DAYS   = ['Pazar','Pazartesi','Sal\u0131','\u00c7ar\u015famba','Per\u015fembe','Cuma','Cumartesi'];
-
-  listEl.innerHTML = groups.map(([key, ms]) => {
-    const paid = groupPaid(ms);
-    const totalFee = ms.reduce((s,m) => s + getMatchFee(m), 0);
-    const firstM = ms[0];
-    const matchType = firstM.matchType || 'bolge';
-    const typeLbl = matchType==='ozellig' ? '\u00d6zel Lig' : matchType==='okul' ? 'Okul' : 'B\u00f6lge';
-    const typeColor = matchType==='ozellig' ? 'var(--accent)' : matchType==='okul' ? 'var(--accent3)' : 'var(--warn)';
-    const typeBg    = matchType==='ozellig' ? 'rgba(245,166,35,.1)' : matchType==='okul' ? 'rgba(61,184,160,.1)' : 'rgba(245,166,35,.07)';
-    const [yy,mm,dd] = (firstM.date||'').split('-');
-    const dateStr = (dd&&mm) ? `${dd}.${mm}.${yy}` : (firstM.date||'');
-    const dayName = firstM.date ? DAYS[new Date(firstM.date+'T12:00:00').getDay()] : '';
-    const monLbl  = mm ? MONTHS[parseInt(mm)-1] : '';
-
-    const macRows = ms.map(m => {
-      const parts = [
-        m.time   ? '\u23f0 '+m.time   : '',
-        m.venue  ? '\ud83d\udccd '+m.venue  : '',
-        m.category ? '\ud83c\udff7 '+m.category : '',
-        m.role   ? '\ud83d\udc64 '+m.role   : ''
-      ].filter(Boolean).join(' \u00b7 ');
-      return `<div style="padding:7px 0;border-bottom:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;">${m.name||'Ma\u00e7'}</div>
-        ${parts ? `<div style="font-size:10px;color:var(--text3);line-height:1.6;">${parts}</div>` : ''}
-        <div style="font-size:10px;font-family:'Bebas Neue',sans-serif;color:${paid?'var(--good)':'var(--warn)'};margin-top:2px;">${getMatchFee(m).toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
-      </div>`;
-    }).join('');
-
-    const safeKey = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-color:${paid?'rgba(61,184,160,.3)':'var(--border)'};">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:4px 8px;min-width:40px;">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--accent);">${dd||'\u2014'}</div>
-            <div style="font-size:8px;color:var(--text3);letter-spacing:1px;">${monLbl}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--text);">${dayName}${dayName?', ':''}${dateStr}</div>
-            <div style="margin-top:3px;display:inline-block;padding:1px 8px;border-radius:20px;font-size:9px;font-weight:700;color:${typeColor};background:${typeBg};">${typeLbl} &mdash; ${ms.length} ma\u00e7</div>
-          </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${paid?'var(--good)':'var(--warn)'};">${totalFee.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
-          <button onclick="toggleGrupOdendi('${safeKey}',${paid})"
-            style="margin-top:3px;padding:3px 10px;border-radius:5px;border:1px solid ${paid?'var(--good)':'var(--border)'};background:${paid?'rgba(61,184,160,.12)':'var(--surface)'};color:${paid?'var(--good)':'var(--text3)'};font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-            ${paid ? '\u2705 \u00d6dendi' : '\u25a1 \u00d6denmedi'}
-          </button>
-        </div>
-      </div>
-      <div style="padding:0 12px;">${macRows}</div>
-    </div>`;
-  }).join('');
-}
-
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 </script>
 </body>
 </html>
