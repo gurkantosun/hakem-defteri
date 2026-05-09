@@ -1265,6 +1265,7 @@ async function saveMatch(){
     keymom:document.getElementById('m-keymom').value.trim(),
     upcoming:matchStatus==='upcoming',
   };
+  let savedOK=false;
   try{
     if(editingId){
       await window._FB.updateMatch(currentUser.uid,editingId,obj);
@@ -1276,20 +1277,22 @@ async function saveMatch(){
       matches.unshift({id:newId,...obj});
       if(matchType==='okul'&&matchStatus==='managed')document.getElementById('duplicate-btn').style.display='inline-flex';
       showToast('✅ Maç kaydedildi!');
-      saveBtn.textContent='✅ Kaydedildi!';
-      saveBtn.disabled=false;
-      setTimeout(()=>{ saveBtn.textContent='✅ Kaydet'; }, 2500);
+      savedOK=true;
       resetFormFields();
-      sortMatchesArray();
-      updateHeaderStats();renderDashboard();renderMatches();renderCalendar();
-      return; // finally'deki reset'i bypass et
     }
     sortMatchesArray();
     updateHeaderStats();renderDashboard();renderMatches();renderCalendar();
   }catch(e){
     showToast('❌ Hata: '+e.message);console.error(e);
   }finally{
-    saveBtn.disabled=false;saveBtn.textContent='✅ Kaydet';
+    saveBtn.disabled=false;
+    if(savedOK){
+      saveBtn.textContent='✅ Kaydedildi!';
+      saveBtn.style.background='#22c55e';
+      setTimeout(()=>{saveBtn.textContent='✅ Kaydet';saveBtn.style.background='';},2500);
+    }else{
+      saveBtn.textContent='✅ Kaydet';
+    }
   }
 }
 
@@ -2009,7 +2012,10 @@ async function runSyncType(type){
   }
 }
 
+let autoSyncDone = false;
 async function autoSyncOnLoad(){
+  if(autoSyncDone) return;
+  autoSyncDone = true;
   const userName = getUserNameUpper();
   if(!userName) return;
 
