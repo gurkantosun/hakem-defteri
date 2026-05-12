@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hakem Gelişim Defteri</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2196F3">
 
 <!-- ═══════════════════════════════════════════════════════════
      FIREBASE — Kendi config bilgilerini buraya yapıştır
@@ -2634,5 +2636,20 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
 }
 
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('Service Worker başarıyla kaydedildi! Scope:', registration.scope);
+        })
+        .catch(err => {
+          console.log('Service Worker kaydı başarısız:', err);
+        });
+    });
+  }
+</script>
+     
 </body>
 </html>
