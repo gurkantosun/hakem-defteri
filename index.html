@@ -78,7 +78,22 @@
     return doc.exists ? doc.data() : {};
   }
 
-  window._FB = { registerUser, loginUser, loadMatches, addMatch, updateMatch, deleteMatchDB, saveSettings, loadSettings };
+  async function saveGoals(uid, data){
+    await db.collection('users').doc(uid).collection('settings').doc('goals').set({goals: data});
+  }
+  async function fetchGoals(uid){
+    const doc = await db.collection('users').doc(uid).collection('settings').doc('goals').get();
+    return doc.exists ? (doc.data().goals || []) : [];
+  }
+  async function saveQuizHist(uid, data){
+    await db.collection('users').doc(uid).collection('settings').doc('quizhist').set({quizHist: data});
+  }
+  async function fetchQuizHist(uid){
+    const doc = await db.collection('users').doc(uid).collection('settings').doc('quizhist').get();
+    return doc.exists ? (doc.data().quizHist || []) : [];
+  }
+
+  window._FB = { registerUser, loginUser, loadMatches, addMatch, updateMatch, deleteMatchDB, saveSettings, loadSettings, saveGoals, fetchGoals, saveQuizHist, fetchQuizHist };
   window._FB_READY = true;
   document.dispatchEvent(new Event('fb-ready'));
 })();
@@ -1070,6 +1085,8 @@ async function initApp(){
   // Maçları Firestore'dan yükle
   try{
     matches=await window._FB.loadMatches(currentUser.uid);
+    try{ goals = await window._FB.fetchGoals(currentUser.uid); } catch(e){ goals = JSON.parse(localStorage.getItem(goalsKey())||'[]'); }
+    try{ quizHist = await window._FB.fetchQuizHist(currentUser.uid); } catch(e){ quizHist = JSON.parse(localStorage.getItem(quizHistKey())||'[]'); }
   }catch(e){console.error('Maçlar yüklenemedi:',e);matches=[];}
   // Tarihe göre sırala (en yeni en üstte)
   sortMatchesArray();
@@ -1131,8 +1148,7 @@ function sortMatchesArray(){
 }
 
 function save(){
-  localStorage.setItem('hd_goals',JSON.stringify(goals));
-  localStorage.setItem('hd_quiz',JSON.stringify(quizHist));
+  // goals & quizHist synced via Firebase
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1367,7 +1383,12 @@ function openEditForm(id){
   if(!m.observer||m.observer==='Yok')setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[0],'none');
   else{setObs(document.getElementById('obs-toggle').querySelectorAll('.type-btn')[1],'var');document.getElementById('m-obs-name').value=m.observer.replace('Var — ','');}
   currentRating=m.rating||0;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<currentRating));
-  selectedErrors=[...(m.errors||[])];renderErrorTags();
+  // Hataları ayır: tag olanlar selectedErrors'a, serbest metinler textarea'ya
+  const allErrs = m.errors || [];
+  selectedErrors = allErrs.filter(e => ERROR_CATS.includes(e));
+  const customErrs = allErrs.filter(e => !ERROR_CATS.includes(e));
+  document.getElementById('m-custom-error').value = customErrs.join(', ');
+  renderErrorTags();
   switchTab('add',null);window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1425,11 +1446,20 @@ function renderDashboard(){
   const upEl=document.getElementById('upcoming-section');
   if(upcoming.length){
     const nearestDate=upcoming[0].date;
-    const nearestMatches=upcoming.filter(m=>m.date===nearestDate);
     const diff=Math.ceil((new Date(nearestDate)-new Date(t))/(1000*60*60*24));
     const diffStr=diff===0?'Bugün!':diff===1?'Yarın':`${diff} gün sonra`;
-    upEl.innerHTML=`<div class="section-title">📅 Yaklaşan — ${diffStr}</div>`+
-      nearestMatches.map(m=>matchCardHTML(m)).join('');
+    // Günlere göre grupla ve tümünü göster
+    const byDate={};
+    upcoming.forEach(m=>{ if(!byDate[m.date]) byDate[m.date]=[]; byDate[m.date].push(m); });
+    let html=`<div class="section-title">📅 Yaklaşan — ${upcoming.length} maç</div>`;
+    Object.entries(byDate).sort(([a],[b])=>a.localeCompare(b)).forEach(([date,ms])=>{
+      const d=new Date(date+'T00:00:00');
+      const dayDiff=Math.ceil((new Date(date)-new Date(t))/(1000*60*60*24));
+      const label=dayDiff===0?'Bugün':dayDiff===1?'Yarın':d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+      html+=`<div style="font-size:10px;font-weight:700;color:var(--accent3);margin:6px 0 3px;letter-spacing:.5px;">${label.toUpperCase()}</div>`;
+      html+=ms.map(m=>matchCardHTML(m)).join('');
+    });
+    upEl.innerHTML=html;
   }else upEl.innerHTML='';
 
   // Stats
@@ -1676,10 +1706,28 @@ function renderAnalysis(){
 // GOALS (localStorage — kullanıcıya özel prefix)
 // ════════════════════════════════════════════════════════════
 function goalsKey(){return `hd_goals_${currentUser?.uid||'local'}`;}
-function loadGoals(){goals=JSON.parse(localStorage.getItem(goalsKey())||'[]');}
-function addGoal(){const t=document.getElementById('goal-text').value.trim();if(!t){showToast('⚠️ Hedef gir!');return;}loadGoals();goals.unshift({id:Date.now(),text:t,cat:document.getElementById('goal-cat').value,done:false});localStorage.setItem(goalsKey(),JSON.stringify(goals));document.getElementById('goal-text').value='';renderGoals();showToast('🎯 Hedef eklendi!');}
-function toggleGoal(id){loadGoals();const g=goals.find(x=>x.id===id);if(g)g.done=!g.done;localStorage.setItem(goalsKey(),JSON.stringify(goals));renderGoals();}
-function deleteGoal(id){loadGoals();goals=goals.filter(g=>g.id!==id);localStorage.setItem(goalsKey(),JSON.stringify(goals));renderGoals();}
+function loadGoals(){/* goals already in memory from Firebase */}
+async function addGoal(){
+  const t=document.getElementById('goal-text').value.trim();
+  if(!t){showToast('⚠️ Hedef gir!');return;}
+  loadGoals();
+  goals.unshift({id:Date.now(),text:t,cat:document.getElementById('goal-cat').value,done:false});
+  document.getElementById('goal-text').value='';
+  await syncGoals();
+  renderGoals();
+  showToast('🎯 Hedef eklendi!');
+}
+async function toggleGoal(id){loadGoals();const g=goals.find(x=>x.id===id);if(g)g.done=!g.done;await syncGoals();renderGoals();}
+async function deleteGoal(id){loadGoals();goals=goals.filter(g=>g.id!==id);await syncGoals();renderGoals();}
+async function syncGoals(){
+  localStorage.setItem(goalsKey(), JSON.stringify(goals)); // fallback
+  if(currentUser) try{ await window._FB.saveGoals(currentUser.uid, goals); }catch(e){console.error('syncGoals:',e);}
+}
+async function syncQuizHist(){
+  localStorage.setItem(quizHistKey(), JSON.stringify(quizHist));
+  if(currentUser) try{ await window._FB.saveQuizHist(currentUser.uid, quizHist); }catch(e){console.error('syncQuizHist:',e);}
+}
+
 function renderGoals(){
   loadGoals();
   const el=document.getElementById('goals-list');
@@ -1708,7 +1756,8 @@ function startQuiz(){
 }
 function clearQuizHistory(){
   if(!confirm('Tüm quiz geçmişi silinsin mi?')) return;
-  localStorage.removeItem(quizHistKey());
+  quizHist = [];
+  syncQuizHist();
   renderQuizHistory();
   showToast('🗑️ Quiz geçmişi silindi.');
 }
@@ -1736,16 +1785,16 @@ function showResult(){
   document.getElementById('r-pct').textContent=pct+'%';
   document.getElementById('r-msg').textContent=[[90,'🔥 Mükemmel!'],[70,'👍 Çok iyi!'],[50,'📖 Gelişme var.'],[0,'💪 Daha fazla çalış!']].find(([t])=>pct>=t)[1];
   document.getElementById('r-review').innerHTML=`<div class="section-title">📖 Açıklamalar</div>`+qList.map((q,i)=>`<div class="card" style="margin-bottom:5px;"><div style="font-size:9px;color:var(--text3);">Soru ${i+1}</div><div style="font-size:11px;font-weight:600;margin:2px 0;">${q.question}</div><div style="font-size:10px;color:var(--accent3);">${q.explanation||''}</div></div>`).join('');
-  const qh=JSON.parse(localStorage.getItem(quizHistKey())||'[]');
-  qh.unshift({date:todayStr(),score:qCorrect,total:qList.length,pct,diff:qDiff});
-  localStorage.setItem(quizHistKey(),JSON.stringify(qh));
+  quizHist = quizHist||[];
+  quizHist.unshift({date:todayStr(),score:qCorrect,total:qList.length,pct,diff:qDiff});
+  syncQuizHist();
 }
 function endQuiz(){document.getElementById('quiz-active-view').style.display='none';document.getElementById('quiz-setup-view').style.display='block';renderQuizHistory();}
 function resetQuiz(){document.getElementById('quiz-result-view').style.display='none';document.getElementById('quiz-setup-view').style.display='block';renderQuizHistory();}
 function renderQuizHistory(){
   const sec=document.getElementById('quiz-hist-section');
   const list=document.getElementById('quiz-hist-list');
-  const qh=JSON.parse(localStorage.getItem(quizHistKey())||'[]');
+  const qh=quizHist||[];
   if(!qh.length){sec.style.display='none';return;}
   sec.style.display='block';
   list.innerHTML=qh.slice(0,8).map(h=>{const col=h.pct>=80?'var(--good)':h.pct>=60?'var(--warn)':'var(--bad)';return `<div class="card" style="padding:6px 9px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:10px;color:var(--text2);">${h.date} <span style="color:var(--text3)">· ${h.diff}</span></div><div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:${col};">${h.score}/${h.total} (${h.pct}%)</div></div>`;}).join('');
