@@ -1279,6 +1279,11 @@ async function saveMatch(){
       showToast('✅ Maç kaydedildi!');
       savedOK=true;
       resetFormFields();
+      // Kaydedince maçlarım sekmesine geç
+      setTimeout(()=>{
+        const matchesBtn = document.querySelector('.nav-btn[onclick*="matches"]');
+        switchTab('matches', matchesBtn);
+      }, 1200);
     }
     sortMatchesArray();
     updateHeaderStats();renderDashboard();renderMatches();renderCalendar();
@@ -1409,27 +1414,7 @@ function renderDashboard(){
     const diff=Math.ceil((new Date(nearestDate)-new Date(t))/(1000*60*60*24));
     const diffStr=diff===0?'Bugün!':diff===1?'Yarın':`${diff} gün sonra`;
     upEl.innerHTML=`<div class="section-title">📅 Yaklaşan — ${diffStr}</div>`+
-      nearestMatches.map(m=>{
-        const d=new Date((m.date||'2000-01-01')+'T00:00:00');
-        const tb=m.matchType==='okul'?`<span class="badge badge-okul">🏫 ${m.category||'Okul'}</span>`:m.matchType==='ozellig'?`<span class="badge" style="background:rgba(61,184,160,.13);color:var(--accent3);">⭐ ${m.category||'Özel Lig'}</span>`:`<span class="badge badge-bolge">🏆 ${m.category||'Bölge'}</span>`;
-        return `<div class="match-card future-card" onclick="openMatchDetail('${m.id}')">
-          <div class="match-date-badge fdb">
-            <div class="match-date-day">${d.getDate()}</div>
-            <div class="match-date-mon">${d.toLocaleString('tr-TR',{month:'short'}).toUpperCase()}</div>
-          </div>
-          <div class="match-info">
-            <h3>${m.name||'Maç'}</h3>
-            <div class="match-meta">
-              ${tb}
-              ${m.role?`<span>👤 ${m.role}</span>`:''}
-              ${m.time?`<span>🕐 ${m.time}</span>`:''}
-              ${m.venue?`<span>📍 ${m.venue}</span>`:''}
-              <span class="future-pill">📅 Yaklaşan</span>
-            </div>
-          </div>
-          <div><span style="font-size:15px;">📍</span></div>
-        </div>`;
-      }).join('');
+      nearestMatches.map(m=>matchCardHTML(m)).join('');
   }else upEl.innerHTML='';
 
   // Stats
@@ -1882,6 +1867,7 @@ function parseRowsToMatches(rows, matchType, userName){
       role     = h1 === name ? '1. Hakem' : 'Yardımcı Hakem';
       const rawPartner = h1 === name ? String(row[6]||'').trim() : String(row[5]||'').trim();
       partner = toTitleCase(rawPartner);
+      observer = 'Yok'; // Okul maçlarında gözlemci yok
 
     } else {
       // Bölge: A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Kategori G=Grup H=1.Hakem I=2.Hakem ... L=Gözlemci
@@ -2550,8 +2536,7 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
       venue    = String(row[2]||'').trim();
       role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
       partner  = toTitleCase(h1.includes(name) ? String(row[6]||'').trim() : String(row[5]||'').trim());
-      const g  = String(row[12]||'').trim();
-      observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
+      observer = 'Yok'; // Okul maçlarında gözlemci sütunu yok
 
     } else { // bolge
       if(row.length < 9) continue;
