@@ -1896,7 +1896,7 @@ function parseRowsToMatches(rows, matchType, userName){
     const row = rows[i];
     if(!row || row.length < 2) continue;
 
-    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner;
+    let h1, h2, dateStr, time, homeTeam, awayTeam, category, venue, role, partner, observer;
 
     if(matchType === 'ozellig'){
       // A=Tarih B=Salon C=Saat D=ATakımı E=BTakımı F=Organizasyon G=Kategori H=Hakem1 I=Hakem2
