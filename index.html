@@ -1880,7 +1880,7 @@ function isFutureDate(dateStr){
 async function fetchSheetData(sheetId, gid){
   const gidParam = gid ? ('&gid=' + gid) : '';
   const url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json' + gidParam;
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: 'omit', cache: 'no-cache' });
   if(!res.ok) throw new Error('Sheet verisi alınamadı (HTTP ' + res.status + ')');
   const text = await res.text();
   const clean = text.slice(text.indexOf('{'), text.lastIndexOf('}')+1);
