@@ -808,9 +808,18 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
   <!-- Arşiv Taraması -->
   <div class="card" style="margin-bottom:10px;border:1px solid rgba(255,200,0,.15);">
     <div class="section-title" style="margin-bottom:6px;">🗂️ Arşiv Taraması</div>
-    <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Geçmiş sezon arşivlerini tara — sana ait oynanan maçları otomatik geçmiş olarak kaydet. Zaten kayıtlı maçlar tekrar eklenmez.</p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Geçmiş sezon arşivlerini tara — sana ait oynanan maçları listeler. İnceleyip onaylayabilirsin.</p>
     <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#5a4a00,#7a6500);" id="sync-arsiv-btn" onclick="runArsivScan()">🗂️ Arşivi Tara</button>
     <div id="sync-arsiv-status" style="font-size:11px;color:var(--text3);margin-top:6px;min-height:14px;"></div>
+  </div>
+
+  <!-- Arşiv Önizleme -->
+  <div id="arsiv-preview" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;">
+      <div class="section-title" style="margin:0;" id="arsiv-preview-title">Bulunan Maçlar</div>
+      <button class="btn btn-primary btn-sm" onclick="confirmAllArsiv()" id="arsiv-confirm-all-btn">✅ Hepsini Onayla</button>
+    </div>
+    <div id="arsiv-preview-list"></div>
   </div>
 
   <!-- Sonuçlar -->
@@ -2195,6 +2204,8 @@ function showSyncNotification(allNew, anyProgramChanged){
 // ARŞİV TARAMA
 // ════════════════════════════════════════════════════════════
 
+let arsivPendingMatches = []; // {match, action: 'add'|'update', existing}
+
 async function runArsivScan(){
   const userName = getUserNameUpper();
   if(!userName){ showToast('⚠️ Profil bilgisi eksik!'); return; }
@@ -2202,47 +2213,37 @@ async function runArsivScan(){
   const statusEl = document.getElementById('sync-arsiv-status');
   btn.disabled = true; btn.textContent = '⏳ Arşiv taranıyor...';
   statusEl.textContent = 'Arşiv okunuyor...';
-  let totalFound=0, totalSaved=0, totalUpdated=0, totalSkipped=0;
+  document.getElementById('arsiv-preview').style.display = 'none';
+  arsivPendingMatches = [];
 
-  // Helper: kaydet veya güncelle
-  async function processMatch(m){
+  const collectMatch = (m) => {
     const existing = findExistingMatch(m);
     if(existing){
       const updated = {...existing, name:m.name||existing.name, homeTeam:m.homeTeam||existing.homeTeam, awayTeam:m.awayTeam||existing.awayTeam, category:m.category||existing.category, venue:m.venue||existing.venue, role:m.role||existing.role, partners:existing.partners||m.partner||'', observer:(existing.observer&&existing.observer!=='Yok')?existing.observer:(m.observer||'Yok'), upcoming:false};
       const changed = updated.name!==existing.name||updated.category!==existing.category||updated.venue!==existing.venue||updated.role!==existing.role||updated.observer!==existing.observer;
-      if(changed){ try{ await window._FB.updateMatch(currentUser.uid,existing.id,updated); const idx=matches.findIndex(x=>x.id===existing.id); if(idx>=0)matches[idx]={id:existing.id,...updated}; totalUpdated++; }catch(e){console.error(e);} }
-      else totalSkipped++;
+      if(changed) arsivPendingMatches.push({match:updated, action:'update', existing, id:existing.id});
     } else {
       const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,homeTeam:m.homeTeam,awayTeam:m.awayTeam,league:'',score:'',venue:m.venue,role:m.role,partners:m.partner||'',observer:m.observer||'Yok',rating:0,errors:[],comment:'',keymom:'',upcoming:false};
-      try{ const newId=await window._FB.addMatch(currentUser.uid,obj); matches.unshift({id:newId,...obj}); totalSaved++; }catch(e){console.error(e);}
+      arsivPendingMatches.push({match:obj, action:'add'});
     }
-  }
+  };
 
-  // 1. Sabit arşiv dosyaları (Özel Lig + Okul arşivi)
   for(const type of ['ozellig','okul']){
     statusEl.textContent = (type==='ozellig'?'Özel Lig':'Okul') + ' arşivi taranıyor...';
     try{
-      const sh = ARSIV_SHEETS[type];
-      const rows = await fetchSheetData(sh.id, sh.gid);
-      const found = parseRowsToMatchesAll(rows, type, userName, true); // true = geçmiş maçlar
-      totalFound += found.length;
-      for(const m of found) await processMatch(m);
+      const rows = await fetchSheetData(ARSIV_SHEETS[type].id, ARSIV_SHEETS[type].gid);
+      parseRowsToMatchesAll(rows, type, userName, true).forEach(collectMatch);
     }catch(e){ console.error(type+' arşiv hatası:',e); }
   }
 
-  // 2. Güncel Özel Lig + Okul programı (tarihi geçmiş maçlar)
   for(const type of ['ozellig','okul']){
     statusEl.textContent = (type==='ozellig'?'Özel Lig':'Okul') + ' güncel program taranıyor...';
     try{
-      const sh = SYNC_SHEETS[type];
-      const rows = await fetchSheetData(sh.id, sh.gid);
-      const found = parseRowsToMatchesAll(rows, type, userName, true); // sadece geçmiş
-      totalFound += found.length;
-      for(const m of found) await processMatch(m);
-    }catch(e){ console.error(type+' güncel program hatası:',e); }
+      const rows = await fetchSheetData(SYNC_SHEETS[type].id, SYNC_SHEETS[type].gid);
+      parseRowsToMatchesAll(rows, type, userName, true).forEach(collectMatch);
+    }catch(e){ console.error(type+' program hatası:',e); }
   }
 
-  // 3. Kaydedilmiş bölge haftalık linkleri
   try{
     const settings = await window._FB.loadSettings(currentUser.uid);
     const bolgeArchive = settings.bolgeArchive||[];
@@ -2251,24 +2252,120 @@ async function runArsivScan(){
     for(let i=0;i<bolgeArchive.length;i++){
       const url=bolgeArchive[i]; const sheetId=sheetIdFromUrl(url); const gid=gidFromUrl(url);
       if(!sheetId) continue;
-      statusEl.textContent=`Bölge arşivi taranıyor (${i+1}/${bolgeArchive.length})...`;
+      statusEl.textContent=`Bölge arşivi (${i+1}/${bolgeArchive.length})...`;
       try{
         const rows=await fetchSheetData(sheetId,gid);
-        const found=parseRowsToMatchesAll(rows,'bolge',userName,true);
-        totalFound+=found.length;
-        for(const m of found) await processMatch(m);
-      }catch(e){ console.error('Bölge linki okunamadı:',e); }
+        parseRowsToMatchesAll(rows,'bolge',userName,true).forEach(collectMatch);
+      }catch(e){}
     }
-  }catch(e){ console.error('Bölge arşiv listesi:',e); }
+  }catch(e){}
 
-  if(totalSaved>0||totalUpdated>0){ sortMatchesArray(); updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar(); renderAnalysis(); }
-  const parts=[];
-  if(totalSaved>0) parts.push(totalSaved+' yeni maç eklendi');
-  if(totalUpdated>0) parts.push(totalUpdated+' maç güncellendi');
-  if(totalSkipped>0) parts.push(totalSkipped+' zaten kayıtlıydı');
-  statusEl.textContent = parts.length ? '✅ '+parts.join(', ')+'.' : 'Arşivde sana ait yeni maç bulunamadı.';
-  if(totalSaved>0||totalUpdated>0) showToast(`✅ Arşiv: ${totalSaved} eklendi, ${totalUpdated} güncellendi.`);
   btn.disabled=false; btn.textContent='🗂️ Arşivi Tara';
+
+  if(arsivPendingMatches.length === 0){
+    statusEl.textContent = '✅ Arşivde yeni veya güncellenmesi gereken maç bulunamadı.';
+    return;
+  }
+
+  statusEl.textContent = `${arsivPendingMatches.length} maç bulundu — aşağıda incele ve onayla.`;
+  renderArsivPreview();
+}
+
+function renderArsivPreview(){
+  const preview = document.getElementById('arsiv-preview');
+  const list = document.getElementById('arsiv-preview-list');
+  const title = document.getElementById('arsiv-preview-title');
+  const adds = arsivPendingMatches.filter(p=>p.action==='add').length;
+  const updates = arsivPendingMatches.filter(p=>p.action==='update').length;
+  title.textContent = `${arsivPendingMatches.length} Maç Bulundu (${adds} yeni, ${updates} güncelleme)`;
+
+  list.innerHTML = arsivPendingMatches.map((p,i) => {
+    const m = p.match;
+    const isAdd = p.action === 'add';
+    const badge = isAdd
+      ? `<span style="background:rgba(61,184,160,.2);color:var(--accent3);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">+ YENİ</span>`
+      : `<span style="background:rgba(255,180,0,.15);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">✏️ GÜNCELLEME</span>`;
+    const typeIcon = m.matchType==='bolge'?'🏆':m.matchType==='ozellig'?'⭐':'🏫';
+    return `<div class="card" style="margin-bottom:6px;" id="arsiv-item-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">${badge} <span style="font-size:10px;color:var(--text3);">${typeIcon} ${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</span></div>
+          <div style="font-weight:600;font-size:12px;margin-bottom:2px;">${m.name||m.venue||'Maç'}</div>
+          <div style="font-size:10px;color:var(--text3);">📅 ${m.date} · 🕐 ${m.time||'—'} · 📍 ${m.venue||'—'}</div>
+          <div style="font-size:10px;color:var(--text3);">📂 ${m.category||'—'} · 👤 ${m.role||'—'}</div>
+          ${!isAdd && p.existing ? `<div style="font-size:10px;color:var(--accent);margin-top:2px;">🔄 Güncelleme: kategori/salon/rol bilgisi düzelecek</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:80px;">
+          <button class="btn btn-primary btn-sm" onclick="confirmSingleArsiv(${i},this)" style="white-space:nowrap;">✅ Onayla</button>
+          <button class="btn btn-ghost btn-sm" onclick="rejectSingleArsiv(${i},this)" style="white-space:nowrap;font-size:10px;">✕ Atla</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  preview.style.display = 'block';
+}
+
+async function confirmSingleArsiv(idx, btn){
+  const p = arsivPendingMatches[idx];
+  if(!p || p.done) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  try{
+    if(p.action === 'add'){
+      const newId = await window._FB.addMatch(currentUser.uid, p.match);
+      matches.unshift({id:newId,...p.match});
+    } else {
+      await window._FB.updateMatch(currentUser.uid, p.id, p.match);
+      const idx2 = matches.findIndex(x=>x.id===p.id);
+      if(idx2>=0) matches[idx2] = {id:p.id,...p.match};
+    }
+    p.done = true;
+    const card = document.getElementById('arsiv-item-'+idx);
+    if(card) card.style.opacity='0.4';
+    btn.textContent = '✅';
+    sortMatchesArray(); updateHeaderStats(); renderDashboard(); renderMatches();
+    showToast(p.action==='add' ? '✅ Maç eklendi!' : '✅ Maç güncellendi!');
+  }catch(e){
+    showToast('❌ Hata: '+e.message);
+    btn.disabled=false; btn.textContent='✅ Onayla';
+  }
+}
+
+function rejectSingleArsiv(idx, btn){
+  const p = arsivPendingMatches[idx];
+  if(!p) return;
+  p.done = true;
+  const card = document.getElementById('arsiv-item-'+idx);
+  if(card){ card.style.opacity='0.3'; card.style.pointerEvents='none'; }
+}
+
+async function confirmAllArsiv(){
+  const pending = arsivPendingMatches.filter(p=>!p.done);
+  if(!pending.length){ showToast('Onaylanacak maç kalmadı.'); return; }
+  const allBtn = document.getElementById('arsiv-confirm-all-btn');
+  allBtn.disabled=true; allBtn.textContent='⏳ Kaydediliyor...';
+  let saved=0, updated=0;
+  for(let i=0;i<arsivPendingMatches.length;i++){
+    const p = arsivPendingMatches[i];
+    if(p.done) continue;
+    try{
+      if(p.action==='add'){
+        const newId=await window._FB.addMatch(currentUser.uid,p.match);
+        matches.unshift({id:newId,...p.match}); saved++;
+      } else {
+        await window._FB.updateMatch(currentUser.uid,p.id,p.match);
+        const idx2=matches.findIndex(x=>x.id===p.id);
+        if(idx2>=0) matches[idx2]={id:p.id,...p.match}; updated++;
+      }
+      p.done=true;
+      const card=document.getElementById('arsiv-item-'+i);
+      if(card) card.style.opacity='0.4';
+    }catch(e){ console.error(e); }
+  }
+  sortMatchesArray(); updateHeaderStats(); renderDashboard(); renderMatches(); renderCalendar(); renderAnalysis();
+  showToast(`✅ ${saved} eklendi, ${updated} güncellendi.`);
+  document.getElementById('sync-arsiv-status').textContent = `✅ ${saved} maç eklendi, ${updated} güncellendi.`;
+  allBtn.disabled=false; allBtn.textContent='✅ Hepsini Onayla';
 }
 
 
