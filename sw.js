@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hakem-defteri-v2';
+const CACHE_NAME = 'hakem-defteri-v3';
 const urlsToCache = [
   './',
   './index.html',
