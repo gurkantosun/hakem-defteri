@@ -2088,6 +2088,7 @@ async function autoSyncOnLoad(){
 
   let allNew = [];
   let anyProgramChanged = false;
+  let cancelledMatches = [];
 
   // Bölge linki kaydedilmişse onu da tara
   const bolgeUrl = localStorage.getItem('hd_bolge_url') || '';
@@ -2123,9 +2124,9 @@ async function autoSyncOnLoad(){
       }
 
       // Program değişti mi? SADECE boş olan hakem hücreleri doldu mu?
-      // (filledRefs arttıysa yeni atama yapıldı demektir)
-      const newlyFilled = filledRefs - prevData.filledRefs;
-      const programChanged = newlyFilled > 0 || totalRows > prevData.totalRows;
+      // Satır sayısı değişimi = yeni maç eklendi (henüz hakemiz yok), tetikleme
+      const newlyFilled = filledRefs - (prevData.filledRefs||0);
+      const programChanged = newlyFilled > 0; // sadece dolu hakem artışı
       if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
@@ -2143,6 +2144,37 @@ async function autoSyncOnLoad(){
         return !matches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
+
+      // İptal tespiti: daha önce sana atanmış yaklaşan maçlar hâlâ Sheets'te var mı?
+      const myUpcoming = matches.filter(m => m.upcoming && m.matchType === type);
+      for(const saved of myUpcoming){
+        // Sheets'te bu maç hâlâ var mı ve hâlâ benim adım yazıyor mu?
+        const stillAssigned = found.some(f => {
+          if(type === 'okul'){
+            return f.date === saved.date && f.time === saved.time &&
+                   f.venue && saved.venue &&
+                   f.venue.trim().toUpperCase() === saved.venue.trim().toUpperCase();
+          }
+          return f.date === saved.date && f.time === saved.time;
+        });
+        // Sheets'te bu satır var mı ama bana atanmamış mı?
+        if(!stillAssigned){
+          // Rows içinde bu tarih+saat satırı var mı?
+          const rowExists = rows.slice(1).some(row => {
+            if(!row) return false;
+            const d = parseTurkishDate(String(row[0]||''));
+            const t = String(row[type==='okul'?1:2]||'').trim();
+            if(type === 'okul'){
+              const v = String(row[2]||'').trim().toUpperCase();
+              return d===saved.date && t===saved.time && v===(saved.venue||'').trim().toUpperCase();
+            }
+            return d===saved.date && t===saved.time;
+          });
+          if(rowExists){
+            cancelledMatches.push(saved);
+          }
+        }
+      }
 
       localStorage.setItem(storeKey, JSON.stringify({ totalRows, filledRefs }));
 
@@ -2163,10 +2195,10 @@ async function autoSyncOnLoad(){
   // Tarama göstergesini kapat
   if(indicator) indicator.style.display = 'none';
 
-  showSyncNotification(allNew, anyProgramChanged);
+  showSyncNotification(allNew, anyProgramChanged, cancelledMatches);
 }
 
-function showSyncNotification(allNew, anyProgramChanged){
+function showSyncNotification(allNew, anyProgramChanged, cancelledMatches=[]){
   const notif   = document.getElementById('dashboard-notification');
   const text    = document.getElementById('dashboard-notification-text');
   const sub     = document.getElementById('dashboard-notification-sub');
@@ -2174,8 +2206,24 @@ function showSyncNotification(allNew, anyProgramChanged){
   const gotoBtn = document.getElementById('dashboard-notif-goto');
   if(!notif || !text) return;
 
+  // İptal öncelikli — en kritik bildirim
+  if(cancelledMatches.length > 0){
+    icon.textContent = '⚠️';
+    text.textContent = cancelledMatches.length === 1
+      ? `"${cancelledMatches[0].name || cancelledMatches[0].venue}" maçındaki atamanız iptal edildi!`
+      : `${cancelledMatches.length} maçtaki atamanız iptal edildi!`;
+    sub.textContent = cancelledMatches.map(m=>`📅 ${m.date} ${m.time||''} · ${m.venue||''}`).join('\n');
+    gotoBtn.style.display = 'none';
+    notif.style.display = 'flex';
+    // İptal edilen maçları yaklaşandan çıkar
+    cancelledMatches.forEach(m => {
+      const el = document.getElementById('dashboard-notification');
+      if(el) el.style.background = 'linear-gradient(135deg,#7a1a1a,#5a0a0a)';
+    });
+    return;
+  }
+
   if(allNew.length > 0){
-    // Sana yeni atama var
     icon.textContent = '🏀';
     text.textContent = allNew.length + ' yeni maç atamanız var!';
     sub.textContent  = allNew.length + ' ataman Atamalar sekmesinde seni bekliyor. İnceleyip onayladıklarını kaydedebilirsin.';
@@ -2184,13 +2232,11 @@ function showSyncNotification(allNew, anyProgramChanged){
     renderSyncResults();
     document.getElementById('sync-results').style.display = 'block';
   } else if(anyProgramChanged){
-    // Program güncellendi ama sana atama yok
     icon.textContent = '📋';
     text.textContent = 'Program güncellendi, ancak sana atama yok.';
     sub.textContent  = 'Yeni hakem atamaları yapıldı fakat sen listede yer almıyorsun.';
     gotoBtn.style.display = 'none';
   } else {
-    // Hiçbir değişiklik yok
     icon.textContent = '✅';
     text.textContent = 'Herhangi bir yeni atama yok.';
     sub.textContent  = 'Maç programları tarandı — listende yeni bir değişiklik bulunamadı.';
