@@ -2306,8 +2306,8 @@ function renderArsivPreview(){
   preview.style.display = 'block';
 }
 
-async function confirmSingleArsiv(idx, btn){
-  const p = arsivPendingMatches[idx];
+async function confirmSingleArsiv(itemIdx, btn){
+  const p = arsivPendingMatches[itemIdx];
   if(!p || p.done) return;
   btn.disabled = true; btn.textContent = '⏳';
   try{
@@ -2316,13 +2316,14 @@ async function confirmSingleArsiv(idx, btn){
       matches.unshift({id:newId,...p.match});
     } else {
       await window._FB.updateMatch(currentUser.uid, p.id, p.match);
-      const idx2 = matches.findIndex(x=>x.id===p.id);
-      if(idx2>=0) matches[idx2] = {id:p.id,...p.match};
+      const mi = matches.findIndex(x=>x.id===p.id);
+      if(mi>=0) matches[mi] = {id:p.id,...p.match};
     }
     p.done = true;
-    const card = document.getElementById('arsiv-item-'+idx);
+    const card = document.getElementById('arsiv-item-'+itemIdx);
     if(card) card.style.opacity='0.4';
-    btn.textContent = '✅';
+    btn.textContent = '✅ Onaylandı';
+    btn.style.background = '#22c55e';
     sortMatchesArray(); updateHeaderStats(); renderDashboard(); renderMatches();
     showToast(p.action==='add' ? '✅ Maç eklendi!' : '✅ Maç güncellendi!');
   }catch(e){
@@ -2331,12 +2332,13 @@ async function confirmSingleArsiv(idx, btn){
   }
 }
 
-function rejectSingleArsiv(idx, btn){
-  const p = arsivPendingMatches[idx];
+function rejectSingleArsiv(itemIdx, btn){
+  const p = arsivPendingMatches[itemIdx];
   if(!p) return;
   p.done = true;
-  const card = document.getElementById('arsiv-item-'+idx);
+  const card = document.getElementById('arsiv-item-'+itemIdx);
   if(card){ card.style.opacity='0.3'; card.style.pointerEvents='none'; }
+  btn.textContent = '✕ Atlandı';
 }
 
 async function confirmAllArsiv(){
