@@ -1,42 +1,33 @@
-const CACHE_NAME = 'hakem-defteri-v3';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json'
-];
+const CACHE_NAME = 'hakem-defteri-v1';
+const urlsToCache = ['./', './index.html', './manifest.json'];
 
-// Kurulum: yeni cache'i aç ve dosyaları ekle, hemen aktif ol
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting()) // beklemeden aktif ol
+      .then(() => self.skipWaiting())
   );
 });
 
-// Aktivasyon: eski cache'leri temizle
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim()) // açık sekmeleri hemen devral
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch: önce network'ten dene, yoksa cache'den sun
+// index.html'i HİÇ cache'leme — her zaman network'ten al
 self.addEventListener('fetch', event => {
-  // Google Sheets gibi dış istekleri cache'leme
-  if(event.request.url.includes('docs.google.com') ||
-     event.request.url.includes('firestore.googleapis.com') ||
-     event.request.url.includes('firebase')) {
+  if(event.request.url.includes('index.html') || 
+     event.request.url.includes('docs.google.com') ||
+     event.request.url.includes('firebase') ||
+     event.request.url.includes('googleapis')) {
     event.respondWith(fetch(event.request));
     return;
   }
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
+      .then(res => res || fetch(event.request))
   );
 });
