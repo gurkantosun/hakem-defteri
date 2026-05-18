@@ -1186,7 +1186,6 @@ function exportPDF(period){
   let filteredMatches, title;
 
   if(period === 'monthly'){
-    // Ay seçiciden al
     const sel = document.getElementById('rapor-ay-sec');
     const ym  = sel ? sel.value : now.toISOString().slice(0,7);
     filteredMatches = matches.filter(m => !m.upcoming && m.date && m.date.slice(0,7)===ym);
@@ -1217,7 +1216,6 @@ function exportPDF(period){
   const topPartners = Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
   const userName = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
-  const dateStr  = now.toLocaleDateString('tr-TR');
 
   // Ücret (sadece aylık)
   let ucretSection = '';
@@ -1230,40 +1228,24 @@ function exportPDF(period){
       const durum = m.ucretOdendi
         ? '<span style="color:#155724;font-weight:700;">✓ Ödendi</span>'
         : '<span style="color:#856404;font-weight:700;">⏳ Bekliyor</span>';
-      return `<tr>
-        <td>${m.date||'—'}</td>
-        <td>${m.name||m.venue||'—'}</td>
-        <td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td>
-        <td style="text-align:right;">${fee.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
-        <td style="text-align:center;">${durum}</td>
-      </tr>`;
+      return `<tr><td>${m.date||'—'}</td><td>${m.name||m.venue||'—'}</td><td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td><td style="text-align:right;">${fee.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td><td style="text-align:center;">${durum}</td></tr>`;
     }).join('');
-    ucretSection = `
-    <div class="section">
-      <h2>💰 Ücret Özeti</h2>
-      <div class="grid3">
+    ucretSection = `<div class="section"><h2>💰 Ücret Özeti</h2>
+      <div class="grid3" style="margin-bottom:12px;">
         <div class="stat"><div class="stat-val" style="color:#2d6a4f;">${ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Toplam Hak Edilen</div></div>
         <div class="stat"><div class="stat-val" style="color:#155724;">${ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Ödenen</div></div>
         <div class="stat"><div class="stat-val" style="color:#856404;">${ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Bekleyen</div></div>
       </div>
       <table><thead><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th style="text-align:right;">Ücret</th><th style="text-align:center;">Durum</th></tr></thead>
-      <tbody>${ucretRows}</tbody></table>
-    </div>`;
+      <tbody>${ucretRows}</tbody></table></div>`;
   }
 
-  const errRows = topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td style="text-align:center;">${e[1]}</td></tr>`).join('');
-  const partnerRows = topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td style="text-align:center;">${p[1]}</td></tr>`).join('');
+  const errRows = topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td style="text-align:center;font-weight:700;">${e[1]}</td></tr>`).join('');
+  const partnerRows = topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td style="text-align:center;font-weight:700;">${p[1]}</td></tr>`).join('');
   const matchRows = past.map(m=>{
     const puan = m.rating>0 ? m.rating : '—';
-    const puanColor = m.rating>=7 ? '#155724' : m.rating>=5 ? '#856404' : m.rating>0 ? '#721c24' : '#666';
-    return `<tr>
-      <td>${m.date||'—'}</td>
-      <td>${m.name||m.venue||'—'}</td>
-      <td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td>
-      <td>${m.category||'—'}</td>
-      <td>${m.role||'—'}</td>
-      <td style="text-align:center;font-weight:700;color:${puanColor};">${puan}</td>
-    </tr>`;
+    const pc = m.rating>=7?'#155724':m.rating>=5?'#856404':m.rating>0?'#721c24':'#999';
+    return `<tr><td>${m.date||'—'}</td><td>${m.name||m.venue||'—'}</td><td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td><td>${m.category||'—'}</td><td>${m.role||'—'}</td><td style="text-align:center;font-weight:700;color:${pc};">${puan}</td></tr>`;
   }).join('');
 
   const html = `<!DOCTYPE html>
@@ -1271,65 +1253,64 @@ function exportPDF(period){
 <meta charset="UTF-8">
 <title>${title}</title>
 <style>
-  @page { margin: 15mm 12mm; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 0; font-size: 12px; }
-  .header { background: linear-gradient(135deg, #f5a623, #e8890c); color: #fff; padding: 18px 22px; border-radius: 8px; margin-bottom: 18px; }
-  .header h1 { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
-  .header p { margin: 0; opacity: .88; font-size: 11px; }
-  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
-  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
-  .stat { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 7px; padding: 12px; text-align: center; }
-  .stat-val { font-size: 20px; font-weight: 800; color: #f5a623; line-height: 1.1; }
-  .stat-lbl { font-size: 10px; color: #666; margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
-  .section { margin-bottom: 18px; }
-  .section h2 { font-size: 13px; font-weight: 700; border-bottom: 2px solid #f5a623; padding-bottom: 4px; margin-bottom: 10px; color: #1a1a2e; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  th { background: #f5a623; color: #fff; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 10px; }
-  td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  @page { margin: 12mm 10mm; size: A4; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 0; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .header { background: linear-gradient(135deg, #f5a623, #e8890c); color: #fff; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px; }
+  .header h1 { margin: 0 0 3px; font-size: 17px; font-weight: 800; }
+  .header p { margin: 0; opacity: .88; font-size: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .stat { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px 8px; text-align: center; }
+  .stat-val { font-size: 18px; font-weight: 800; color: #f5a623; line-height: 1.1; }
+  .stat-lbl { font-size: 9px; color: #777; margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; }
+  .section { margin-bottom: 14px; }
+  .section h2 { font-size: 11px; font-weight: 700; border-bottom: 2px solid #f5a623; padding-bottom: 3px; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { background: #f5a623 !important; color: #fff !important; padding: 5px 7px; text-align: left; font-weight: 700; font-size: 9px; }
+  td { padding: 4px 7px; border-bottom: 1px solid #eee; vertical-align: middle; }
   tr:nth-child(even) td { background: #fafafa; }
-  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 9px; font-weight: 700; }
-  .bolge { background: #fff3cd; color: #856404; }
-  .ozellig { background: #d1ecf1; color: #0c5460; }
-  .okul { background: #d4edda; color: #155724; }
-  .footer { margin-top: 16px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #eee; padding-top: 8px; }
+  .footer { margin-top: 12px; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none !important; }
+  }
 </style>
 </head><body>
 <div class="header">
   <h1>${title}</h1>
-  <p>Hakem Gelişim Defteri${userName ? ' · ' + userName : ''} · ${dateStr}</p>
+  <p>Hakem Gelişim Defteri${userName ? ' · ' + userName : ''} · ${now.toLocaleDateString('tr-TR')}</p>
 </div>
-<div class="grid4">
+<div class="grid4" style="margin-bottom:12px;">
   <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Toplam Maç</div></div>
   <div class="stat"><div class="stat-val" style="color:#3db8a0;">${avg}</div><div class="stat-lbl">Ort. Puan</div></div>
   <div class="stat"><div class="stat-val" style="color:#2d9e6b;">${good}</div><div class="stat-lbl">İyi Maç (7+)</div></div>
   <div class="stat"><div class="stat-val" style="color:#e8391d;">${Object.values(errMap).reduce((a,b)=>a+b,0)||0}</div><div class="stat-lbl">Toplam Hata</div></div>
 </div>
-<div class="grid3">
+<div class="grid3" style="margin-bottom:14px;">
   <div class="stat"><div class="stat-val">${bolge}</div><div class="stat-lbl">Bölge Maçı</div></div>
   <div class="stat"><div class="stat-val" style="color:#3db8a0;">${ozel}</div><div class="stat-lbl">Özel Lig</div></div>
   <div class="stat"><div class="stat-val" style="color:#2d9e6b;">${okul}</div><div class="stat-lbl">Okul Maçı</div></div>
 </div>
 ${ucretSection}
-${topErrors.length ? `<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><thead><tr><th>#</th><th>Hata</th><th style="text-align:center;">Kez</th></tr></thead><tbody>${errRows}</tbody></table></div>` : ''}
-${topPartners.length ? `<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><thead><tr><th>#</th><th>Hakem</th><th style="text-align:center;">Maç</th></tr></thead><tbody>${partnerRows}</tbody></table></div>` : ''}
+${topErrors.length?`<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><thead><tr><th>#</th><th>Hata</th><th style="text-align:center;width:40px;">Kez</th></tr></thead><tbody>${errRows}</tbody></table></div>`:''}
+${topPartners.length?`<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><thead><tr><th>#</th><th>Hakem</th><th style="text-align:center;width:50px;">Maç</th></tr></thead><tbody>${partnerRows}</tbody></table></div>`:''}
 <div class="section"><h2>📋 Maç Listesi</h2>
-<table><thead><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th style="text-align:center;">Puan</th></tr></thead>
+<table><thead><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th style="text-align:center;width:35px;">Puan</th></tr></thead>
 <tbody>${matchRows}</tbody></table></div>
 <div class="footer">Hakem Gelişim Defteri · gurkantosun.github.io · ${now.toLocaleString('tr-TR')}</div>
+<script>
+  window.addEventListener('load', () => {
+    window.print();
+    window.addEventListener('afterprint', () => window.close());
+  });
+<\/script>
 </body></html>`;
 
-  // Blob olarak aç — tarayıcı PDF'e kaydeder, Türkçe karakter sorunu yok
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  const safeTitle = period==='monthly'
-    ? (document.getElementById('rapor-ay-sec')?.options[document.getElementById('rapor-ay-sec')?.selectedIndex]?.text || 'Aylik')
-    : 'Sezon_2025-2026';
-  a.download = 'HakemDefteri_' + safeTitle.replace(/\s/g,'_') + '.html';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('📄 Rapor indirildi! Tarayıcıda aç → Yazdır → PDF olarak kaydet');
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if(!w){ showToast('⚠️ Popup engellendi! Tarayıcıda popup iznini aç.'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function sortMatchesArray(){
