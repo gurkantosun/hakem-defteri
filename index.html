@@ -692,9 +692,9 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
 <!-- ANALYSIS -->
 <div id="tab-analysis" class="panel">
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-    <button class="btn btn-primary btn-sm" onclick="exportPDF('monthly')">📄 Bu Ay PDF</button>
-    <button class="btn btn-primary btn-sm" onclick="exportPDF('season')">📊 Sezon PDF</button>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <button onclick="exportPDF('monthly')" style="flex:1;min-width:140px;padding:11px 14px;border-radius:9px;border:none;background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;">📄 Bu Ay PDF</button>
+    <button onclick="exportPDF('season')" style="flex:1;min-width:140px;padding:11px 14px;border-radius:9px;border:1px solid var(--accent);background:rgba(245,166,35,.1);color:var(--accent);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;">📊 Sezon PDF</button>
   </div>
   <div class="section-title">⚠️ Hata Frekansı</div>
   <div id="error-analysis"><div class="empty-state"><div class="empty-icon">📊</div><p>Maç ekledikçe belirir.</p></div></div>
@@ -1179,8 +1179,8 @@ function exportPDF(period){
   const avg = rated.length ? (rated.reduce((s,m)=>s+(m.rating||0),0)/rated.length).toFixed(1) : '—';
   const good = past.filter(m=>m.rating>=7).length;
   const bolge = past.filter(m=>m.matchType==='bolge').length;
-  const ozel = past.filter(m=>m.matchType==='ozellig').length;
-  const okul = past.filter(m=>m.matchType==='okul').length;
+  const ozel  = past.filter(m=>m.matchType==='ozellig').length;
+  const okul  = past.filter(m=>m.matchType==='okul').length;
 
   // Hata frekansı
   const errMap = {};
@@ -1191,6 +1191,34 @@ function exportPDF(period){
   const partnerMap = {};
   past.forEach(m=>{ if(m.partners&&m.partners.trim()) m.partners.split(/[,;]/).forEach(p=>{ const n=p.trim(); if(n) partnerMap[n]=(partnerMap[n]||0)+1; }); });
   const topPartners = Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Ücret hesabı (yalnızca aylık PDF'te göster)
+  let ucretHTML = '';
+  if(period === 'monthly'){
+    let ucretToplam = 0, ucretOdenen = 0, ucretBekleyen = 0;
+    const ucretRows = past.map(m => {
+      const fee = (m.matchType === 'ozellig') ? 1200.00 : 378.76;
+      ucretToplam  += fee;
+      if(m.ucretOdendi) ucretOdenen   += fee;
+      else              ucretBekleyen += fee;
+      return `<tr>
+        <td>${m.date||'—'}</td>
+        <td>${m.name||m.venue||'—'}</td>
+        <td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td>
+        <td>${fee.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
+        <td style="color:${m.ucretOdendi?'#155724':'#856404'};font-weight:700;">${m.ucretOdendi?'✅ Ödendi':'⏳ Bekliyor'}</td>
+      </tr>`;
+    }).join('');
+    ucretHTML = `<div class="section">
+      <h2>💰 Ücret Özeti</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+        <div class="stat"><div class="stat-val" style="color:#2d6a4f;">${ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Toplam Hak Edilen</div></div>
+        <div class="stat"><div class="stat-val" style="color:#155724;">${ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Ödenen</div></div>
+        <div class="stat"><div class="stat-val" style="color:#856404;">${ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Bekleyen</div></div>
+      </div>
+      <table><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Ücret</th><th>Durum</th></tr>${ucretRows}</table>
+    </div>`;
+  }
 
   const name = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
 
@@ -1203,7 +1231,7 @@ function exportPDF(period){
     .header p{margin:0;opacity:.85;font-size:12px;}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
     .stat{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:14px;text-align:center;}
-    .stat-val{font-size:24px;font-weight:700;color:#f5a623;}
+    .stat-val{font-size:22px;font-weight:700;color:#f5a623;}
     .stat-lbl{font-size:11px;color:#666;margin-top:2px;}
     .section{margin-bottom:20px;}
     .section h2{font-size:14px;font-weight:700;border-bottom:2px solid #f5a623;padding-bottom:4px;margin-bottom:10px;}
@@ -1213,9 +1241,9 @@ function exportPDF(period){
     tr:nth-child(even) td{background:#fafafa;}
     .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
     .bolge{background:#fff3cd;color:#856404;}
-    .ozel{background:#d1ecf1;color:#0c5460;}
+    .ozellig{background:#d1ecf1;color:#0c5460;}
     .okul{background:#d4edda;color:#155724;}
-    .footer{margin-top:20px;text-align:center;font-size:10px;color:#999;}
+    .footer{margin-top:20px;text-align:center;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:10px;}
     @media print{body{padding:0;} .no-print{display:none;}}
   </style>
   </head><body>
@@ -1227,21 +1255,22 @@ function exportPDF(period){
     <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Toplam Maç</div></div>
     <div class="stat"><div class="stat-val">${avg}</div><div class="stat-lbl">Ort. Puan</div></div>
     <div class="stat"><div class="stat-val">${good}</div><div class="stat-lbl">İyi Maç (7+)</div></div>
-    <div class="stat"><div class="stat-val">${Object.values(errMap).reduce((a,b)=>a+b,0)}</div><div class="stat-lbl">Toplam Hata</div></div>
+    <div class="stat"><div class="stat-val">${Object.values(errMap).reduce((a,b)=>a+b,0)||0}</div><div class="stat-lbl">Toplam Hata</div></div>
   </div>
-  <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
     <div class="stat"><div class="stat-val">${bolge}</div><div class="stat-lbl">Bölge Maçı</div></div>
     <div class="stat"><div class="stat-val">${ozel}</div><div class="stat-lbl">Özel Lig</div></div>
     <div class="stat"><div class="stat-val">${okul}</div><div class="stat-lbl">Okul Maçı</div></div>
   </div>
+  ${ucretHTML}
   ${topErrors.length ? `<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><tr><th>#</th><th>Hata</th><th>Adet</th></tr>${topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1]}</td></tr>`).join('')}</table></div>` : ''}
   ${topPartners.length ? `<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><tr><th>#</th><th>Hakem</th><th>Maç</th></tr>${topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td>${p[1]}</td></tr>`).join('')}</table></div>` : ''}
   <div class="section"><h2>📋 Maç Listesi</h2>
   <table><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th>Puan</th></tr>
-  ${past.sort((a,b)=>a.date.localeCompare(b.date)).map(m=>`<tr>
+  ${past.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(m=>`<tr>
     <td>${m.date||'—'}</td>
     <td>${m.name||m.venue||'—'}</td>
-    <td><span class="badge ${m.matchType}">${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</span></td>
+    <td><span class="badge ${m.matchType||''}">${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</span></td>
     <td>${m.category||'—'}</td>
     <td>${m.role||'—'}</td>
     <td>${m.rating>0?m.rating:'—'}</td>
