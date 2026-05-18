@@ -1,5 +1,5 @@
 const CACHE_NAME = 'hakem-defteri-v1';
-const urlsToCache = ['./', './index.html', './manifest.json'];
+const urlsToCache = ['./manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -17,12 +17,19 @@ self.addEventListener('activate', event => {
   );
 });
 
-// index.html'i HİÇ cache'leme — her zaman network'ten al
+// index.html ve dinamik kaynakları HİÇ cache'leme — her zaman network'ten al
 self.addEventListener('fetch', event => {
-  if(event.request.url.includes('index.html') || 
-     event.request.url.includes('docs.google.com') ||
-     event.request.url.includes('firebase') ||
-     event.request.url.includes('googleapis')) {
+  const url = event.request.url;
+  if(
+    url.endsWith('/') ||
+    url.includes('index.html') ||
+    url.includes('docs.google.com') ||
+    url.includes('firebase') ||
+    url.includes('googleapis') ||
+    url.includes('gstatic.com') ||
+    url.includes('cdn.jsdelivr') ||
+    url.includes('cdnjs.cloudflare')
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }
