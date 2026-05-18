@@ -921,6 +921,8 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 // ════════════════════════════════════════════════════════════
 // QUIZ SORULARI
@@ -1176,133 +1178,258 @@ function showToast(msg){
 }
 
 function exportPDF(period){
+  const { jsPDF } = window.jspdf;
+  if(!jsPDF){ showToast('PDF kütüphanesi yükleniyor, lütfen bekle...'); return; }
+
   const now = new Date();
-  let filteredMatches, title, subtitle;
+  const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  let filteredMatches, title;
 
   if(period === 'monthly'){
     const ym = now.toISOString().slice(0,7);
     filteredMatches = matches.filter(m => !m.upcoming && m.date && m.date.slice(0,7)===ym);
-    const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
     title = monthNames[now.getMonth()] + ' ' + now.getFullYear() + ' — Aylık Özet';
-    subtitle = 'Hakem Gelişim Defteri';
   } else {
     filteredMatches = matches.filter(m => !m.upcoming);
-    title = '2025-2026 Sezonu — Sezon Özeti';
-    subtitle = 'Hakem Gelişim Defteri';
+    title = '2025-2026 Sezonu — Sezon Ozeti';
   }
 
   if(!filteredMatches.length){ showToast('Bu dönemde maç yok!'); return; }
+  showToast('⏳ PDF hazırlanıyor...');
 
-  const past = filteredMatches;
+  const past = [...filteredMatches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const total = past.length;
   const rated = past.filter(m=>m.rating>0);
-  const avg = rated.length ? (rated.reduce((s,m)=>s+(m.rating||0),0)/rated.length).toFixed(1) : '—';
-  const good = past.filter(m=>m.rating>=7).length;
+  const avg   = rated.length ? (rated.reduce((s,m)=>s+(m.rating||0),0)/rated.length).toFixed(1) : '-';
+  const good  = past.filter(m=>m.rating>=7).length;
   const bolge = past.filter(m=>m.matchType==='bolge').length;
   const ozel  = past.filter(m=>m.matchType==='ozellig').length;
   const okul  = past.filter(m=>m.matchType==='okul').length;
 
-  // Hata frekansı
   const errMap = {};
   past.forEach(m=>(m.errors||[]).forEach(e=>{errMap[e]=(errMap[e]||0)+1;}));
-  const topErrors = Object.entries(errMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topErrors = Object.entries(errMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
-  // Partner hakemler
   const partnerMap = {};
   past.forEach(m=>{ if(m.partners&&m.partners.trim()) m.partners.split(/[,;]/).forEach(p=>{ const n=p.trim(); if(n) partnerMap[n]=(partnerMap[n]||0)+1; }); });
   const topPartners = Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-  // Ücret hesabı (yalnızca aylık PDF'te göster)
-  let ucretHTML = '';
-  if(period === 'monthly'){
-    let ucretToplam = 0, ucretOdenen = 0, ucretBekleyen = 0;
-    const ucretRows = past.map(m => {
-      const fee = (m.matchType === 'ozellig') ? 1200.00 : 378.76;
-      ucretToplam  += fee;
-      if(m.ucretOdendi) ucretOdenen   += fee;
-      else              ucretBekleyen += fee;
-      return `<tr>
-        <td>${m.date||'—'}</td>
-        <td>${m.name||m.venue||'—'}</td>
-        <td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td>
-        <td>${fee.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
-        <td style="color:${m.ucretOdendi?'#155724':'#856404'};font-weight:700;">${m.ucretOdendi?'✅ Ödendi':'⏳ Bekliyor'}</td>
-      </tr>`;
-    }).join('');
-    ucretHTML = `<div class="section">
-      <h2>💰 Ücret Özeti</h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
-        <div class="stat"><div class="stat-val" style="color:#2d6a4f;">${ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Toplam Hak Edilen</div></div>
-        <div class="stat"><div class="stat-val" style="color:#155724;">${ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Ödenen</div></div>
-        <div class="stat"><div class="stat-val" style="color:#856404;">${ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Bekleyen</div></div>
-      </div>
-      <table><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Ücret</th><th>Durum</th></tr>${ucretRows}</table>
-    </div>`;
+  const userName = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
+
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  let y = 0;
+
+  // Renk paleti
+  const C_ORANGE  = [245,166,35];
+  const C_DARK    = [26,29,36];
+  const C_WHITE   = [255,255,255];
+  const C_LIGHT   = [248,249,250];
+  const C_BORDER  = [220,225,235];
+  const C_TEAL    = [61,184,160];
+  const C_RED     = [232,57,29];
+  const C_TEXT    = [60,65,80];
+  const C_TEXT2   = [120,128,145];
+
+  function checkPage(needed=20){
+    if(y + needed > ph - 16){
+      doc.addPage();
+      y = 16;
+    }
   }
 
-  const name = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
+  function drawHeader(){
+    // Gradient header bg (simulated with rect)
+    doc.setFillColor(...C_ORANGE);
+    doc.roundedRect(margin, 10, pw - margin*2, 28, 3, 3, 'F');
+    // Darker strip
+    doc.setFillColor(220,140,10);
+    doc.roundedRect(margin, 28, pw - margin*2, 10, 0, 0, 'F');
+    doc.roundedRect(margin, 28, pw - margin*2, 10, 3, 3, 'F');
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>${title}</title>
-  <style>
-    body{font-family:Arial,sans-serif;color:#1a1a2e;margin:0;padding:20px;font-size:13px;}
-    .header{background:linear-gradient(135deg,#f5a623,#e8890c);color:#fff;padding:20px 24px;border-radius:10px;margin-bottom:20px;}
-    .header h1{margin:0 0 4px;font-size:20px;}
-    .header p{margin:0;opacity:.85;font-size:12px;}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-    .stat{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:14px;text-align:center;}
-    .stat-val{font-size:22px;font-weight:700;color:#f5a623;}
-    .stat-lbl{font-size:11px;color:#666;margin-top:2px;}
-    .section{margin-bottom:20px;}
-    .section h2{font-size:14px;font-weight:700;border-bottom:2px solid #f5a623;padding-bottom:4px;margin-bottom:10px;}
-    table{width:100%;border-collapse:collapse;font-size:12px;}
-    th{background:#f5a623;color:#fff;padding:6px 8px;text-align:left;}
-    td{padding:5px 8px;border-bottom:1px solid #eee;}
-    tr:nth-child(even) td{background:#fafafa;}
-    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
-    .bolge{background:#fff3cd;color:#856404;}
-    .ozellig{background:#d1ecf1;color:#0c5460;}
-    .okul{background:#d4edda;color:#155724;}
-    .footer{margin-top:20px;text-align:center;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:10px;}
-    @media print{body{padding:0;} .no-print{display:none;}}
-  </style>
-  </head><body>
-  <div class="header">
-    <h1>${title}</h1>
-    <p>${subtitle}${name?' · '+name:''} · Oluşturulma: ${now.toLocaleDateString('tr-TR')}</p>
-  </div>
-  <div class="grid">
-    <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Toplam Maç</div></div>
-    <div class="stat"><div class="stat-val">${avg}</div><div class="stat-lbl">Ort. Puan</div></div>
-    <div class="stat"><div class="stat-val">${good}</div><div class="stat-lbl">İyi Maç (7+)</div></div>
-    <div class="stat"><div class="stat-val">${Object.values(errMap).reduce((a,b)=>a+b,0)||0}</div><div class="stat-lbl">Toplam Hata</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
-    <div class="stat"><div class="stat-val">${bolge}</div><div class="stat-lbl">Bölge Maçı</div></div>
-    <div class="stat"><div class="stat-val">${ozel}</div><div class="stat-lbl">Özel Lig</div></div>
-    <div class="stat"><div class="stat-val">${okul}</div><div class="stat-lbl">Okul Maçı</div></div>
-  </div>
-  ${ucretHTML}
-  ${topErrors.length ? `<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><tr><th>#</th><th>Hata</th><th>Adet</th></tr>${topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1]}</td></tr>`).join('')}</table></div>` : ''}
-  ${topPartners.length ? `<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><tr><th>#</th><th>Hakem</th><th>Maç</th></tr>${topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td>${p[1]}</td></tr>`).join('')}</table></div>` : ''}
-  <div class="section"><h2>📋 Maç Listesi</h2>
-  <table><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th>Puan</th></tr>
-  ${past.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(m=>`<tr>
-    <td>${m.date||'—'}</td>
-    <td>${m.name||m.venue||'—'}</td>
-    <td><span class="badge ${m.matchType||''}">${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</span></td>
-    <td>${m.category||'—'}</td>
-    <td>${m.role||'—'}</td>
-    <td>${m.rating>0?m.rating:'—'}</td>
-  </tr>`).join('')}
-  </table></div>
-  <div class="footer">Hakem Gelişim Defteri · hakem-defteri.app · ${now.toLocaleString('tr-TR')}</div>
-  <script>window.print();window.onafterprint=()=>window.close();<\/script>
-  </body></html>`;
+    doc.setTextColor(...C_WHITE);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text(title, margin+4, 22);
+    doc.setFontSize(8);
+    doc.setFont('helvetica','normal');
+    doc.text('Hakem Gelisim Defteri' + (userName ? '  |  ' + userName : '') + '  |  ' + now.toLocaleDateString('tr-TR'), margin+4, 33);
+    y = 46;
+  }
 
-  const w = window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
+  function sectionTitle(txt){
+    checkPage(14);
+    doc.setFillColor(...C_ORANGE);
+    doc.rect(margin, y, 3, 6, 'F');
+    doc.setTextColor(...C_DARK);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.text(txt, margin+6, y+4.5);
+    y += 10;
+  }
+
+  function statCards(items){
+    // items: [{label, value, color}]
+    checkPage(22);
+    const cw = (pw - margin*2 - (items.length-1)*4) / items.length;
+    items.forEach((item,i)=>{
+      const x = margin + i*(cw+4);
+      doc.setFillColor(...C_LIGHT);
+      doc.setDrawColor(...C_BORDER);
+      doc.roundedRect(x, y, cw, 18, 2, 2, 'FD');
+      doc.setTextColor(...(item.color||C_ORANGE));
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(14);
+      doc.text(String(item.value), x + cw/2, y+10, {align:'center'});
+      doc.setTextColor(...C_TEXT2);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7);
+      doc.text(item.label, x + cw/2, y+15.5, {align:'center'});
+    });
+    y += 22;
+  }
+
+  // ── DRAW ──────────────────────────────────────────────────
+  drawHeader();
+
+  // İstatistik kartları
+  sectionTitle('Genel Istatistikler');
+  statCards([
+    {label:'Toplam Mac', value:total, color:C_ORANGE},
+    {label:'Ort. Puan',  value:avg,   color:C_TEAL},
+    {label:'Iyi Mac (7+)',value:good,  color:[61,184,100]},
+    {label:'Toplam Hata',value:Object.values(errMap).reduce((a,b)=>a+b,0)||0, color:C_RED},
+  ]);
+  statCards([
+    {label:'Bolge Maci', value:bolge, color:C_ORANGE},
+    {label:'Ozel Lig',   value:ozel,  color:C_TEAL},
+    {label:'Okul Maci',  value:okul,  color:[100,180,100]},
+  ]);
+
+  // Ücret özeti (sadece aylık)
+  if(period === 'monthly'){
+    let ucretToplam=0, ucretOdenen=0, ucretBekleyen=0;
+    const ucretRows = past.map(m=>{
+      const fee = m.matchType==='ozellig' ? 1200 : 378.76;
+      ucretToplam += fee;
+      if(m.ucretOdendi) ucretOdenen += fee; else ucretBekleyen += fee;
+      return [
+        m.date||'-',
+        (m.name||m.venue||'-').substring(0,30),
+        m.matchType==='bolge'?'Bolge':m.matchType==='ozellig'?'Ozel Lig':'Okul',
+        fee.toLocaleString('tr-TR',{minimumFractionDigits:2})+' TL',
+        m.ucretOdendi?'Odendi':'Bekliyor'
+      ];
+    });
+
+    checkPage(10);
+    sectionTitle('Ucret Ozeti');
+    statCards([
+      {label:'Toplam Hak Edilen', value:ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})+' TL', color:[45,106,79]},
+      {label:'Odenen',            value:ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2})+' TL',  color:[21,87,36]},
+      {label:'Bekleyen',          value:ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})+' TL',color:[133,100,4]},
+    ]);
+
+    checkPage(20);
+    doc.autoTable({
+      startY: y,
+      head:[['Tarih','Mac','Tur','Ucret','Durum']],
+      body: ucretRows,
+      margin:{left:margin, right:margin},
+      styles:{fontSize:8, cellPadding:2.5, textColor:C_TEXT},
+      headStyles:{fillColor:C_ORANGE, textColor:C_WHITE, fontStyle:'bold', fontSize:8},
+      alternateRowStyles:{fillColor:C_LIGHT},
+      columnStyles:{3:{halign:'right'}, 4:{halign:'center'}},
+      didParseCell(data){
+        if(data.section==='body' && data.column.index===4){
+          data.cell.styles.textColor = data.cell.raw==='Odendi' ? [21,87,36] : [133,100,4];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // Hata frekansı
+  if(topErrors.length){
+    checkPage(16);
+    sectionTitle('En Sik Hatalar');
+    doc.autoTable({
+      startY: y,
+      head:[['#','Hata','Kez']],
+      body: topErrors.map((e,i)=>[i+1, e[0], e[1]]),
+      margin:{left:margin, right:margin},
+      styles:{fontSize:8, cellPadding:2.5, textColor:C_TEXT},
+      headStyles:{fillColor:C_ORANGE, textColor:C_WHITE, fontStyle:'bold'},
+      alternateRowStyles:{fillColor:C_LIGHT},
+      columnStyles:{0:{cellWidth:10}, 2:{cellWidth:14, halign:'center'}},
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // Partner hakemler
+  if(topPartners.length){
+    checkPage(16);
+    sectionTitle('Birlikte Calistigim Hakemler');
+    doc.autoTable({
+      startY: y,
+      head:[['#','Hakem','Mac Sayisi']],
+      body: topPartners.map((p,i)=>[i+1, p[0], p[1]]),
+      margin:{left:margin, right:margin},
+      styles:{fontSize:8, cellPadding:2.5, textColor:C_TEXT},
+      headStyles:{fillColor:[61,184,160], textColor:C_WHITE, fontStyle:'bold'},
+      alternateRowStyles:{fillColor:C_LIGHT},
+      columnStyles:{0:{cellWidth:10}, 2:{cellWidth:22, halign:'center'}},
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // Maç listesi
+  checkPage(20);
+  sectionTitle('Mac Listesi');
+  doc.autoTable({
+    startY: y,
+    head:[['Tarih','Mac','Tur','Kategori','Rol','Puan']],
+    body: past.map(m=>[
+      m.date||'-',
+      (m.name||m.venue||'-').substring(0,28),
+      m.matchType==='bolge'?'Bolge':m.matchType==='ozellig'?'Ozel Lig':'Okul',
+      (m.category||'-').substring(0,14),
+      (m.role||'-').substring(0,12),
+      m.rating>0 ? m.rating : '-'
+    ]),
+    margin:{left:margin, right:margin},
+    styles:{fontSize:7.5, cellPadding:2, textColor:C_TEXT},
+    headStyles:{fillColor:C_DARK, textColor:C_WHITE, fontStyle:'bold', fontSize:8},
+    alternateRowStyles:{fillColor:C_LIGHT},
+    columnStyles:{5:{halign:'center', cellWidth:14}},
+    didParseCell(data){
+      if(data.section==='body' && data.column.index===5){
+        const v = parseInt(data.cell.raw);
+        if(v>=7) data.cell.styles.textColor=[21,87,36];
+        else if(v>=5) data.cell.styles.textColor=[133,100,4];
+        else if(v>0) data.cell.styles.textColor=[180,40,20];
+      }
+    }
+  });
+
+  // Footer — her sayfa
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1; i<=pageCount; i++){
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(...C_TEXT2);
+    doc.text('Hakem Gelisim Defteri  |  gurkantosun.github.io  |  ' + now.toLocaleString('tr-TR'), margin, ph-6);
+    doc.text(i + ' / ' + pageCount, pw-margin, ph-6, {align:'right'});
+  }
+
+  // Dosya adı
+  const safeTitle = period==='monthly'
+    ? monthNames[now.getMonth()] + '_' + now.getFullYear()
+    : 'Sezon_2025-2026';
+  doc.save('HakemDefteri_' + safeTitle + '.pdf');
 }
 
 function sortMatchesArray(){
