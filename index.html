@@ -1217,7 +1217,6 @@ function exportPDF(period){
 
   const userName = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
 
-  // Ücret (sadece aylık)
   let ucretSection = '';
   if(period === 'monthly'){
     let ucretToplam=0, ucretOdenen=0, ucretBekleyen=0;
@@ -1240,77 +1239,73 @@ function exportPDF(period){
       <tbody>${ucretRows}</tbody></table></div>`;
   }
 
-  const errRows = topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td style="text-align:center;font-weight:700;">${e[1]}</td></tr>`).join('');
-  const partnerRows = topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td style="text-align:center;font-weight:700;">${p[1]}</td></tr>`).join('');
+  const errRows  = topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td style="text-align:center;font-weight:700;">${e[1]}</td></tr>`).join('');
+  const partRows = topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td style="text-align:center;font-weight:700;">${p[1]}</td></tr>`).join('');
   const matchRows = past.map(m=>{
     const puan = m.rating>0 ? m.rating : '—';
     const pc = m.rating>=7?'#155724':m.rating>=5?'#856404':m.rating>0?'#721c24':'#999';
     return `<tr><td>${m.date||'—'}</td><td>${m.name||m.venue||'—'}</td><td>${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td><td>${m.category||'—'}</td><td>${m.role||'—'}</td><td style="text-align:center;font-weight:700;color:${pc};">${puan}</td></tr>`;
   }).join('');
 
-  const html = `<!DOCTYPE html>
-<html lang="tr"><head>
-<meta charset="UTF-8">
-<title>${title}</title>
-<style>
-  @page { margin: 12mm 10mm; size: A4; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 0; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .header { background: linear-gradient(135deg, #f5a623, #e8890c); color: #fff; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px; }
-  .header h1 { margin: 0 0 3px; font-size: 17px; font-weight: 800; }
-  .header p { margin: 0; opacity: .88; font-size: 10px; }
-  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
-  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-  .stat { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px 8px; text-align: center; }
-  .stat-val { font-size: 18px; font-weight: 800; color: #f5a623; line-height: 1.1; }
-  .stat-lbl { font-size: 9px; color: #777; margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; }
-  .section { margin-bottom: 14px; }
-  .section h2 { font-size: 11px; font-weight: 700; border-bottom: 2px solid #f5a623; padding-bottom: 3px; margin: 0 0 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  th { background: #f5a623 !important; color: #fff !important; padding: 5px 7px; text-align: left; font-weight: 700; font-size: 9px; }
-  td { padding: 4px 7px; border-bottom: 1px solid #eee; vertical-align: middle; }
-  tr:nth-child(even) td { background: #fafafa; }
-  .footer { margin-top: 12px; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #eee; padding-top: 6px; }
-  @media print {
-    body { padding: 0; }
-    .no-print { display: none !important; }
-  }
-</style>
-</head><body>
-<div class="header">
-  <h1>${title}</h1>
-  <p>Hakem Gelişim Defteri${userName ? ' · ' + userName : ''} · ${now.toLocaleDateString('tr-TR')}</p>
-</div>
-<div class="grid4" style="margin-bottom:12px;">
+  const css = `
+    @page { margin: 12mm 10mm; size: A4; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 16px; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .header { background: linear-gradient(135deg,#f5a623,#e8890c); color:#fff; padding:16px 20px; border-radius:8px; margin-bottom:14px; }
+    .header h1 { margin:0 0 3px; font-size:17px; font-weight:800; }
+    .header p { margin:0; opacity:.88; font-size:10px; }
+    .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px; }
+    .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .stat { background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:10px 8px; text-align:center; }
+    .stat-val { font-size:18px; font-weight:800; color:#f5a623; line-height:1.1; }
+    .stat-lbl { font-size:9px; color:#777; margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
+    .section { margin-bottom:12px; }
+    .section h2 { font-size:11px; font-weight:700; border-bottom:2px solid #f5a623; padding-bottom:3px; margin:0 0 8px; }
+    table { width:100%; border-collapse:collapse; font-size:10px; }
+    th { background:#f5a623 !important; color:#fff !important; padding:5px 7px; text-align:left; font-weight:700; font-size:9px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    td { padding:4px 7px; border-bottom:1px solid #eee; vertical-align:middle; }
+    tr:nth-child(even) td { background:#fafafa; }
+    .footer { margin-top:10px; text-align:center; font-size:9px; color:#aaa; border-top:1px solid #eee; padding-top:6px; }
+  `;
+
+  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${title}</title><style>${css}</style></head><body>
+<div class="header"><h1>${title}</h1><p>Hakem Gelişim Defteri${userName?' · '+userName:''} · ${now.toLocaleDateString('tr-TR')}</p></div>
+<div class="grid4" style="margin-bottom:10px;">
   <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Toplam Maç</div></div>
   <div class="stat"><div class="stat-val" style="color:#3db8a0;">${avg}</div><div class="stat-lbl">Ort. Puan</div></div>
   <div class="stat"><div class="stat-val" style="color:#2d9e6b;">${good}</div><div class="stat-lbl">İyi Maç (7+)</div></div>
   <div class="stat"><div class="stat-val" style="color:#e8391d;">${Object.values(errMap).reduce((a,b)=>a+b,0)||0}</div><div class="stat-lbl">Toplam Hata</div></div>
 </div>
-<div class="grid3" style="margin-bottom:14px;">
+<div class="grid3" style="margin-bottom:12px;">
   <div class="stat"><div class="stat-val">${bolge}</div><div class="stat-lbl">Bölge Maçı</div></div>
   <div class="stat"><div class="stat-val" style="color:#3db8a0;">${ozel}</div><div class="stat-lbl">Özel Lig</div></div>
   <div class="stat"><div class="stat-val" style="color:#2d9e6b;">${okul}</div><div class="stat-lbl">Okul Maçı</div></div>
 </div>
 ${ucretSection}
 ${topErrors.length?`<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><thead><tr><th>#</th><th>Hata</th><th style="text-align:center;width:40px;">Kez</th></tr></thead><tbody>${errRows}</tbody></table></div>`:''}
-${topPartners.length?`<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><thead><tr><th>#</th><th>Hakem</th><th style="text-align:center;width:50px;">Maç</th></tr></thead><tbody>${partnerRows}</tbody></table></div>`:''}
+${topPartners.length?`<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><thead><tr><th>#</th><th>Hakem</th><th style="text-align:center;width:50px;">Maç</th></tr></thead><tbody>${partRows}</tbody></table></div>`:''}
 <div class="section"><h2>📋 Maç Listesi</h2>
 <table><thead><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th style="text-align:center;width:35px;">Puan</th></tr></thead>
 <tbody>${matchRows}</tbody></table></div>
 <div class="footer">Hakem Gelişim Defteri · gurkantosun.github.io · ${now.toLocaleString('tr-TR')}</div>
-<script>
-  window.addEventListener('load', () => {
-    window.print();
-    window.addEventListener('afterprint', () => window.close());
-  });
-<\/script>
 </body></html>`;
 
-  const w = window.open('', '_blank', 'width=900,height=700');
-  if(!w){ showToast('⚠️ Popup engellendi! Tarayıcıda popup iznini aç.'); return; }
-  w.document.write(html);
-  w.document.close();
+  // Gizli iframe ile print — popup yok, ana sayfa kapanmıyor
+  let iframe = document.getElementById('_pdf_iframe');
+  if(iframe) iframe.remove();
+  iframe = document.createElement('iframe');
+  iframe.id = '_pdf_iframe';
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 300);
+  };
+
+  iframe.srcdoc = html;
 }
 
 function sortMatchesArray(){
