@@ -462,6 +462,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
   <button class="nav-btn" onclick="switchTab('drivesync',this)">🔗 Atamalar</button>
   <button class="nav-btn" onclick="switchTab('partners',this)">🤝 Birlikte Çalıştıklarım</button>
   <button class="nav-btn" onclick="switchTab('ucret',this)">💰 Ücret</button>
+  <button class="nav-btn" onclick="switchTab('raporlar',this)">📄 Raporlar</button>
 </nav>
 
 <main>
@@ -889,6 +890,25 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
   </div>
 
   <div id="ucret-list"></div>
+</div>
+
+<!-- RAPORLAR TAB -->
+<div id="tab-raporlar" class="panel">
+  <div class="section-title">📄 Raporlar & PDF Export</div>
+
+  <div class="card card-accent" style="margin-bottom:10px;">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;">📅 Aylık Özet</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Bu ayki maçların özeti, hata analizi ve ücret dökümü PDF olarak hazırlanır.</div>
+    <div id="rapor-monthly-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
+    <button onclick="exportPDF('monthly')" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#000;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;">📄 Bu Ayın PDF'ini Oluştur</button>
+  </div>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;">📊 Sezon Özeti</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Tüm sezondaki maçlar, istatistikler ve en sık hatalar.</div>
+    <div id="rapor-season-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
+    <button onclick="exportPDF('season')" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--accent);background:rgba(245,166,35,.08);color:var(--accent);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Sezon PDF'ini Oluştur</button>
+  </div>
 </div>
 
 
@@ -1369,6 +1389,7 @@ function switchTab(tab,btn){
   if(tab==='drivesync')initSyncTab();
   if(tab==='partners')renderPartnersTab();
   if(tab==='ucret'){renderUcretTab();updateUcretFilterBtns();}
+  if(tab==='raporlar')renderRaporlar();
   if(tab==='quiz')renderQuizHistory();
 }
 
@@ -2682,6 +2703,38 @@ async function toggleGrupOdendi(grpKey, currentPaid){
   } catch(e){
     showToast('\u274c G\u00fcncelleme hatas\u0131: ' + e.message);
   }
+}
+
+function renderRaporlar(){
+  const now = new Date();
+  const ym  = now.toISOString().slice(0,7);
+  const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+  // Aylık stats
+  const monthly = matches.filter(m => !m.upcoming && m.date && m.date.slice(0,7)===ym);
+  const mAvg = monthly.filter(m=>m.rating>0).length
+    ? (monthly.filter(m=>m.rating>0).reduce((s,m)=>s+(m.rating||0),0)/monthly.filter(m=>m.rating>0).length).toFixed(1) : '—';
+  let mUcret = 0;
+  monthly.forEach(m=>{ mUcret += (m.matchType==='ozellig'?1200:378.76); });
+  const ms = document.getElementById('rapor-monthly-stats');
+  if(ms) ms.innerHTML = [
+    ['Maç',monthly.length,'var(--accent)'],
+    ['Ort. Puan',mAvg,'var(--accent3)'],
+    ['Hak Edilen',mUcret.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺','var(--good)']
+  ].map(([l,v,c])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${c};">${v}</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${l}</div></div>`).join('');
+
+  // Sezon stats
+  const season = matches.filter(m => !m.upcoming);
+  const sAvg = season.filter(m=>m.rating>0).length
+    ? (season.filter(m=>m.rating>0).reduce((s,m)=>s+(m.rating||0),0)/season.filter(m=>m.rating>0).length).toFixed(1) : '—';
+  let sUcret = 0;
+  season.forEach(m=>{ sUcret += (m.matchType==='ozellig'?1200:378.76); });
+  const ss = document.getElementById('rapor-season-stats');
+  if(ss) ss.innerHTML = [
+    ['Toplam Maç',season.length,'var(--accent)'],
+    ['Ort. Puan',sAvg,'var(--accent3)'],
+    ['Toplam Hak Edilen',sUcret.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺','var(--good)']
+  ].map(([l,v,c])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${c};">${v}</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${l}</div></div>`).join('');
 }
 
 function renderUcretTab(){
