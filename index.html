@@ -692,6 +692,10 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
 <!-- ANALYSIS -->
 <div id="tab-analysis" class="panel">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="btn btn-primary btn-sm" onclick="exportPDF('monthly')">📄 Bu Ay PDF</button>
+    <button class="btn btn-primary btn-sm" onclick="exportPDF('season')">📊 Sezon PDF</button>
+  </div>
   <div class="section-title">⚠️ Hata Frekansı</div>
   <div id="error-analysis"><div class="empty-state"><div class="empty-icon">📊</div><p>Maç ekledikçe belirir.</p></div></div>
   <hr>
@@ -1149,6 +1153,107 @@ function showToast(msg){
   el.classList.add('show');
   if(_toastTimer)clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function exportPDF(period){
+  const now = new Date();
+  let filteredMatches, title, subtitle;
+
+  if(period === 'monthly'){
+    const ym = now.toISOString().slice(0,7);
+    filteredMatches = matches.filter(m => !m.upcoming && m.date && m.date.slice(0,7)===ym);
+    const monthNames = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    title = monthNames[now.getMonth()] + ' ' + now.getFullYear() + ' — Aylık Özet';
+    subtitle = 'Hakem Gelişim Defteri';
+  } else {
+    filteredMatches = matches.filter(m => !m.upcoming);
+    title = '2025-2026 Sezonu — Sezon Özeti';
+    subtitle = 'Hakem Gelişim Defteri';
+  }
+
+  if(!filteredMatches.length){ showToast('Bu dönemde maç yok!'); return; }
+
+  const past = filteredMatches;
+  const total = past.length;
+  const rated = past.filter(m=>m.rating>0);
+  const avg = rated.length ? (rated.reduce((s,m)=>s+(m.rating||0),0)/rated.length).toFixed(1) : '—';
+  const good = past.filter(m=>m.rating>=7).length;
+  const bolge = past.filter(m=>m.matchType==='bolge').length;
+  const ozel = past.filter(m=>m.matchType==='ozellig').length;
+  const okul = past.filter(m=>m.matchType==='okul').length;
+
+  // Hata frekansı
+  const errMap = {};
+  past.forEach(m=>(m.errors||[]).forEach(e=>{errMap[e]=(errMap[e]||0)+1;}));
+  const topErrors = Object.entries(errMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Partner hakemler
+  const partnerMap = {};
+  past.forEach(m=>{ if(m.partners&&m.partners.trim()) m.partners.split(/[,;]/).forEach(p=>{ const n=p.trim(); if(n) partnerMap[n]=(partnerMap[n]||0)+1; }); });
+  const topPartners = Object.entries(partnerMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const name = currentUser ? ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim() : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#1a1a2e;margin:0;padding:20px;font-size:13px;}
+    .header{background:linear-gradient(135deg,#f5a623,#e8890c);color:#fff;padding:20px 24px;border-radius:10px;margin-bottom:20px;}
+    .header h1{margin:0 0 4px;font-size:20px;}
+    .header p{margin:0;opacity:.85;font-size:12px;}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+    .stat{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:14px;text-align:center;}
+    .stat-val{font-size:24px;font-weight:700;color:#f5a623;}
+    .stat-lbl{font-size:11px;color:#666;margin-top:2px;}
+    .section{margin-bottom:20px;}
+    .section h2{font-size:14px;font-weight:700;border-bottom:2px solid #f5a623;padding-bottom:4px;margin-bottom:10px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{background:#f5a623;color:#fff;padding:6px 8px;text-align:left;}
+    td{padding:5px 8px;border-bottom:1px solid #eee;}
+    tr:nth-child(even) td{background:#fafafa;}
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+    .bolge{background:#fff3cd;color:#856404;}
+    .ozel{background:#d1ecf1;color:#0c5460;}
+    .okul{background:#d4edda;color:#155724;}
+    .footer{margin-top:20px;text-align:center;font-size:10px;color:#999;}
+    @media print{body{padding:0;} .no-print{display:none;}}
+  </style>
+  </head><body>
+  <div class="header">
+    <h1>${title}</h1>
+    <p>${subtitle}${name?' · '+name:''} · Oluşturulma: ${now.toLocaleDateString('tr-TR')}</p>
+  </div>
+  <div class="grid">
+    <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Toplam Maç</div></div>
+    <div class="stat"><div class="stat-val">${avg}</div><div class="stat-lbl">Ort. Puan</div></div>
+    <div class="stat"><div class="stat-val">${good}</div><div class="stat-lbl">İyi Maç (7+)</div></div>
+    <div class="stat"><div class="stat-val">${Object.values(errMap).reduce((a,b)=>a+b,0)}</div><div class="stat-lbl">Toplam Hata</div></div>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="stat"><div class="stat-val">${bolge}</div><div class="stat-lbl">Bölge Maçı</div></div>
+    <div class="stat"><div class="stat-val">${ozel}</div><div class="stat-lbl">Özel Lig</div></div>
+    <div class="stat"><div class="stat-val">${okul}</div><div class="stat-lbl">Okul Maçı</div></div>
+  </div>
+  ${topErrors.length ? `<div class="section"><h2>⚠️ En Sık Hatalar</h2><table><tr><th>#</th><th>Hata</th><th>Adet</th></tr>${topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td>${e[1]}</td></tr>`).join('')}</table></div>` : ''}
+  ${topPartners.length ? `<div class="section"><h2>🤝 Birlikte Çalıştığım Hakemler</h2><table><tr><th>#</th><th>Hakem</th><th>Maç</th></tr>${topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td>${p[1]}</td></tr>`).join('')}</table></div>` : ''}
+  <div class="section"><h2>📋 Maç Listesi</h2>
+  <table><tr><th>Tarih</th><th>Maç</th><th>Tür</th><th>Kategori</th><th>Rol</th><th>Puan</th></tr>
+  ${past.sort((a,b)=>a.date.localeCompare(b.date)).map(m=>`<tr>
+    <td>${m.date||'—'}</td>
+    <td>${m.name||m.venue||'—'}</td>
+    <td><span class="badge ${m.matchType}">${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</span></td>
+    <td>${m.category||'—'}</td>
+    <td>${m.role||'—'}</td>
+    <td>${m.rating>0?m.rating:'—'}</td>
+  </tr>`).join('')}
+  </table></div>
+  <div class="footer">Hakem Gelişim Defteri · hakem-defteri.app · ${now.toLocaleString('tr-TR')}</div>
+  <script>window.print();window.onafterprint=()=>window.close();<\/script>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
 }
 
 function sortMatchesArray(){
@@ -1615,6 +1720,7 @@ async function deleteMatch(id){
     if(deleted && deleted.upcoming){
       if(deleted.matchType==='ozellig'||deleted.matchType==='okul'){
         localStorage.removeItem('hd_scan_' + deleted.matchType);
+      try{ await window._FB.saveSettings(currentUser.uid, { ['hd_scan_'+deleted.matchType]: null }); }catch(e){}
         setTimeout(()=>autoSyncOnLoad(), 800);
       } else if(deleted.matchType==='bolge'){
         // Bölge: arşivdeki linkleri tara, silinen maçın tarihi hangi haftaya denk geliyorsa bul
@@ -2110,7 +2216,13 @@ async function autoSyncOnLoad(){
       const rows = await fetchSheetData(sheetId, gid);
 
       const storeKey = 'hd_scan_' + type;
-      const prevData = JSON.parse(localStorage.getItem(storeKey) || '{"totalRows":0,"filledRefs":0}');
+      // Firebase'den önceki tarama verisini al (cihazlar arası senkron)
+      let prevData = {totalRows:0, filledRefs:0};
+      try{
+        const settings = await window._FB.loadSettings(currentUser.uid);
+        if(settings[storeKey]) prevData = JSON.parse(settings[storeKey]);
+        else { const local = localStorage.getItem(storeKey); if(local) prevData = JSON.parse(local); }
+      }catch(e){ const local = localStorage.getItem(storeKey); if(local) prevData = JSON.parse(local); }
       const totalRows = rows.length - 1;
 
       // Dolu hakem hücre sayısını hesapla (boş yerler doldu mu?)
@@ -2176,7 +2288,10 @@ async function autoSyncOnLoad(){
         }
       }
 
-      localStorage.setItem(storeKey, JSON.stringify({ totalRows, filledRefs }));
+      // Hem localStorage hem Firebase'e kaydet
+      const scanData = JSON.stringify({ totalRows, filledRefs });
+      localStorage.setItem(storeKey, scanData);
+      try{ await window._FB.saveSettings(currentUser.uid, { [storeKey]: scanData }); }catch(e){}
 
       const statusKey = type === 'bolge' ? 'bolge' : type === 'ozellig' ? 'ozel' : 'okul';
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
