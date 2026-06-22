@@ -606,6 +606,8 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
         <button class="cat-btn" onclick="selectCat(this,'U17')">U17</button>
         <button class="cat-btn" onclick="selectCat(this,'U18')">U18</button>
       </div>
+      <label>💰 Maç Başı Ücret (₺)</label>
+      <input type="number" id="m-ozel-ucret" min="0" step="0.01" placeholder="örn: 1200" autocomplete="off">
     </div>
 
     <div class="form-row">
@@ -857,6 +859,17 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 <!-- UCRET TAB -->
 <div id="tab-ucret" class="panel">
   <div class="section-title">💰 Ücret Hesabı</div>
+
+  <!-- Özel Lig Varsayılan Ücret Ayarı -->
+  <div class="card" style="margin-bottom:10px;border-color:rgba(245,166,35,.3);">
+    <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;">⭐ Özel Lig — Varsayılan Maç Ücreti</div>
+    <div style="display:flex;gap:7px;align-items:center;">
+      <input type="number" id="ozel-ucret-input" min="1" step="0.01" placeholder="1200" style="flex:1;margin-bottom:0;font-size:13px;font-weight:600;" autocomplete="off">
+      <span style="font-size:12px;color:var(--text3);white-space:nowrap;">₺ / maç</span>
+      <button class="btn btn-primary btn-sm" onclick="saveOzelUcret()" style="white-space:nowrap;">💾 Kaydet</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:5px;">Maç eklerken ücret girilmezse bu değer kullanılır. Her maça özel ücret için "Yeni Maç" formundan girilebilir.</div>
+  </div>
 
   <div class="stats-grid" style="margin-bottom:14px;">
     <div class="stat-box">
@@ -1145,7 +1158,19 @@ async function initApp(){
     try{
       const settings = await window._FB.loadSettings(currentUser.uid);
       if(settings.bolgeUrl) localStorage.setItem('hd_bolge_url', settings.bolgeUrl);
-    }catch(e){}
+      // Özel lig ücreti
+      if(settings.ozelUcret && !isNaN(settings.ozelUcret)){
+        UCRET_OZEL = parseFloat(settings.ozelUcret);
+        const inp = document.getElementById('ozel-ucret-input');
+        if(inp) inp.value = UCRET_OZEL;
+      } else {
+        const inp = document.getElementById('ozel-ucret-input');
+        if(inp) inp.value = UCRET_OZEL;
+      }
+    }catch(e){
+      const inp = document.getElementById('ozel-ucret-input');
+      if(inp) inp.value = UCRET_OZEL;
+    }
     autoSyncOnLoad();
   }, 1500);
 }
@@ -1221,7 +1246,7 @@ function exportPDF(period){
   if(period === 'monthly'){
     let ucretToplam=0, ucretOdenen=0, ucretBekleyen=0;
     const ucretRows = past.map(m=>{
-      const fee = m.matchType==='ozellig' ? 1200 : 378.76;
+      const fee = m.matchType==='ozellig' ? UCRET_OZEL : 378.76;
       ucretToplam += fee;
       if(m.ucretOdendi) ucretOdenen += fee; else ucretBekleyen += fee;
       const durum = m.ucretOdendi
@@ -1451,6 +1476,9 @@ async function saveMatch(){
     :matchType==='ozellig'
       ?([homeVal,awayVal].filter(Boolean).join(' – ')||`Özel Lig — ${selectedCat}`)
       :(selectedCat||'Okul Maçı');
+  const ozelUcretVal = matchType==='ozellig'
+    ? (parseFloat(String(document.getElementById('m-ozel-ucret').value).replace(',','.')) || null)
+    : null;
   const obj={
     date,time,matchType,category:selectedCat,name,
     homeTeam:homeVal,
@@ -1463,6 +1491,7 @@ async function saveMatch(){
     errors:allErr,comment:document.getElementById('m-comment').value.trim(),
     keymom:document.getElementById('m-keymom').value.trim(),
     upcoming:matchStatus==='upcoming',
+    ...(ozelUcretVal !== null ? { ozelUcret: ozelUcretVal } : {}),
   };
   let savedOK=false;
   try{
@@ -1501,7 +1530,7 @@ async function saveMatch(){
 }
 
 function resetFormFields(){
-  ['m-home','m-away','m-home-ozel','m-away-ozel','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['m-home','m-away','m-home-ozel','m-away-ozel','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error','m-ozel-ucret'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('m-role').value='';
   currentRating=0;selectedErrors=[];selectedCat='';
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
@@ -1516,7 +1545,7 @@ function cancelEdit(){
   document.getElementById('form-title').textContent='🏀 Yeni Maç Kaydı';
   document.getElementById('cancel-edit-btn').style.display='none';
   document.getElementById('duplicate-btn').style.display='none';
-  ['m-home','m-away','m-home-ozel','m-away-ozel','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['m-home','m-away','m-home-ozel','m-away-ozel','m-venue','m-partners','m-obs-name','m-comment','m-keymom','m-custom-error','m-ozel-ucret'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('m-role').value='';
   currentRating=0;selectedErrors=[];selectedCat='';
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
@@ -1541,6 +1570,8 @@ function openEditForm(id){
   if(m.matchType==='ozellig'){
     document.getElementById('m-home-ozel').value=m.homeTeam||'';
     document.getElementById('m-away-ozel').value=m.awayTeam||'';
+    const ucretEl = document.getElementById('m-ozel-ucret');
+    if(ucretEl) ucretEl.value = m.ozelUcret > 0 ? m.ozelUcret : '';
   }else{
     document.getElementById('m-home').value=m.homeTeam||'';
     document.getElementById('m-away').value=m.awayTeam||'';
@@ -1750,6 +1781,7 @@ function openMatchDetail(id){
     </div>
     ${m.score?`<p style="font-size:11px;color:var(--text2);margin-bottom:6px;">📊 ${m.score}</p>`:''}
     ${m.venue?`<p style="font-size:10px;color:var(--text3);margin-bottom:6px;">📍 ${m.venue}${m.partners?' · 🤝 '+m.partners:''}</p>`:''}
+    ${m.matchType==='ozellig'&&!m.upcoming?`<p style="font-size:10px;color:var(--good);margin-bottom:6px;">💰 ${getMatchFee(m).toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${!m.ozelUcret?` <span style="color:var(--text3)">(varsayılan)</span>`:''}</p>`:''}
     ${m.observer&&m.observer!=='Yok'?`<p style="font-size:10px;color:var(--text3);margin-bottom:6px;">👁️ ${m.observer}</p>`:''}
     ${m.errors&&m.errors.length?`<div style="margin-bottom:9px;"><div class="section-title" style="font-size:10px;">⚠️ Hatalar (${m.errors.length})</div>${m.errors.map(e=>`<div class="error-list-item">${e}</div>`).join('')}</div>`:''}
     ${m.comment?`<div style="margin-bottom:9px;"><div class="section-title" style="font-size:10px;">💬 Yorum</div><div class="note-block">${m.comment}</div></div>`:''}
@@ -2654,13 +2686,30 @@ function renderPartnersTab(){
 // UCRET TAB
 // ════════════════════════════════════════════════════════════
 const UCRET_BOLGE = 378.76;
-const UCRET_OZEL  = 1200.00;
+let UCRET_OZEL  = 1200.00; // kullanıcı tarafından ayarlanabilir
 
 let ucretStatusFilter = 'all';   // all | paid | unpaid
 let ucretTypeFilter   = 'all';   // all | bolge | okul | ozellig
 
 function getMatchFee(m){
-  return (m.matchType === 'ozellig') ? UCRET_OZEL : UCRET_BOLGE;
+  if(m.matchType === 'ozellig'){
+    return (m.ozelUcret && m.ozelUcret > 0) ? m.ozelUcret : UCRET_OZEL;
+  }
+  return UCRET_BOLGE;
+}
+
+async function saveOzelUcret(){
+  const inp = document.getElementById('ozel-ucret-input');
+  if(!inp) return;
+  const val = parseFloat(String(inp.value).replace(',','.'));
+  if(isNaN(val) || val <= 0){ showToast('⚠️ Geçerli bir tutar gir!'); return; }
+  UCRET_OZEL = val;
+  try{
+    await window._FB.saveSettings(currentUser.uid, { ozelUcret: val });
+  }catch(e){ console.error('ozelUcret kayıt hatası:', e); }
+  renderUcretTab();
+  renderRaporlar();
+  showToast('✅ Özel lig ücreti güncellendi: ' + val.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' ₺');
 }
 
 function setUcretFilter(val, kind){
@@ -2733,7 +2782,7 @@ function renderRaporlar(){
   const mRated = monthly.filter(m=>m.rating>0);
   const mAvg = mRated.length ? (mRated.reduce((s,m)=>s+(m.rating||0),0)/mRated.length).toFixed(1) : '—';
   let mUcret = 0;
-  monthly.forEach(m=>{ mUcret += (m.matchType==='ozellig'?1200:378.76); });
+  monthly.forEach(m=>{ mUcret += (m.matchType==='ozellig'?UCRET_OZEL:378.76); });
   const ms = document.getElementById('rapor-monthly-stats');
   const statCard = (l,v,c) => `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${c};">${v}</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${l}</div></div>`;
   if(ms) ms.innerHTML = [
@@ -2747,7 +2796,7 @@ function renderRaporlar(){
   const sRated = season.filter(m=>m.rating>0);
   const sAvg = sRated.length ? (sRated.reduce((s,m)=>s+(m.rating||0),0)/sRated.length).toFixed(1) : '—';
   let sUcret = 0;
-  season.forEach(m=>{ sUcret += (m.matchType==='ozellig'?1200:378.76); });
+  season.forEach(m=>{ sUcret += (m.matchType==='ozellig'?UCRET_OZEL:378.76); });
   const ss = document.getElementById('rapor-season-stats');
   if(ss) ss.innerHTML = [
     ['Toplam Maç', season.length, 'var(--accent)'],
@@ -2757,6 +2806,10 @@ function renderRaporlar(){
 }
 
 function renderUcretTab(){
+  // Input'u güncel değerle senkronize et
+  const inp = document.getElementById('ozel-ucret-input');
+  if(inp && !inp.matches(':focus')) inp.value = UCRET_OZEL;
+
   const playedMatches = matches.filter(m => !m.upcoming);
 
   // Toplam istatistikler (filtreden bagımsız)
