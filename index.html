@@ -432,6 +432,16 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
     </div>
   </div>
   <div class="header-right">
+    <div style="display:flex;align-items:center;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;margin-right:10px;">
+      <button id="season-btn-2025" onclick="switchSeason('2025-2026')"
+        style="padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;background:var(--accent);color:#000;transition:all .2s;">
+        25-26
+      </button>
+      <button id="season-btn-2026" onclick="switchSeason('2026-2027')"
+        style="padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;background:transparent;color:var(--text3);transition:all .2s;">
+        26-27
+      </button>
+    </div>
     <div class="header-stats">
       <div class="hstat"><div class="hstat-val" id="hstat-total">0</div><div class="hstat-lbl">Toplam</div></div>
       <div class="hstat"><div class="hstat-val" id="hstat-month">0</div><div class="hstat-lbl">Bu Ay</div></div>
@@ -858,7 +868,10 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
 <!-- UCRET TAB -->
 <div id="tab-ucret" class="panel">
-  <div class="section-title">💰 Ücret Hesabı</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+    <div class="section-title" style="margin-bottom:0;">💰 Ücret Hesabı</div>
+    <div id="ucret-season-label" style="font-size:11px;font-weight:700;color:var(--accent3);background:rgba(61,184,160,.1);padding:3px 10px;border-radius:20px;"></div>
+  </div>
 
   <!-- Özel Lig Varsayılan Ücret Ayarı -->
   <div class="card" style="margin-bottom:10px;border-color:rgba(245,166,35,.3);">
@@ -1010,7 +1023,15 @@ const ERROR_CATS=[
 // STATE
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;   // { uid, firstName, lastName, category, username }
-let matches      = [];     // Firestore'dan yüklenir
+let matches      = [];     // Firestore'dan yüklenir — AKTİF SEZON filtrelidir
+let allMatches   = [];     // Tüm sezonların ham verisi
+
+// Sezon sistemi
+const SEASONS = [
+  { id: '2025-2026', label: '2025-2026', bolgeUcret: 378.76, defaultOzelUcret: 1200.00 },
+  { id: '2026-2027', label: '2026-2027', bolgeUcret: 400.00, defaultOzelUcret: 1400.00 },
+];
+let activeSeason = '2025-2026';  // Kullanıcının baktığı sezon
 let goals        = JSON.parse(localStorage.getItem('hd_goals')||'[]');
 let quizHist     = JSON.parse(localStorage.getItem('hd_quiz')||'[]');
 let editingId    = null;
@@ -1139,7 +1160,24 @@ async function initApp(){
   document.getElementById('user-cat-display').textContent=currentUser.category||'';
   // Maçları Firestore'dan yükle
   try{
-    matches=await window._FB.loadMatches(currentUser.uid);
+    allMatches = await window._FB.loadMatches(currentUser.uid);
+    // Mevcut maçlara season alanı yoksa 2025-2026 ata (migration)
+    const needsTag = allMatches.filter(m => !m.season);
+    if(needsTag.length > 0){
+      for(const m of needsTag){
+        m.season = '2025-2026';
+        try{ await window._FB.updateMatch(currentUser.uid, m.id, { season: '2025-2026' }); }catch(e){}
+      }
+    }
+    // Aktif sezonu settings'ten yükle
+    try{
+      const s = await window._FB.loadSettings(currentUser.uid);
+      if(s.activeSeason && SEASONS.find(x=>x.id===s.activeSeason)) activeSeason = s.activeSeason;
+    }catch(e){}
+    // Ücret ayarı sezona göre yükle
+    UCRET_OZEL = getSeasonConfig().defaultOzelUcret;
+    // Aktif sezon filtresi uygula
+    matches = allMatches.filter(m => m.season === activeSeason);
     try{ goals = await window._FB.fetchGoals(currentUser.uid); } catch(e){ goals = JSON.parse(localStorage.getItem(goalsKey())||'[]'); }
     try{ quizHist = await window._FB.fetchQuizHist(currentUser.uid); } catch(e){ quizHist = JSON.parse(localStorage.getItem(quizHistKey())||'[]'); }
   }catch(e){console.error('Maçlar yüklenemedi:',e);matches=[];}
@@ -1153,6 +1191,7 @@ async function initApp(){
   renderErrorTags();
   renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
   updateHeaderStats();
+  updateSeasonBtns();
   // Bölge linkini Firebase'den çek, sonra otomatik tara
   setTimeout(async ()=>{
     try{
@@ -1184,6 +1223,8 @@ async function autoMarkOverdueMatches(){
       await window._FB.updateMatch(currentUser.uid, m.id, {...m, upcoming:false});
       const idx = matches.findIndex(x=>x.id===m.id);
       if(idx>=0) matches[idx] = {...m, upcoming:false};
+      const ai=allMatches.findIndex(x=>x.id===m.id);
+      if(ai>=0) allMatches[ai]={...m, upcoming:false};
     }catch(e){ console.error('autoMark hatası:', e); }
   }
 }
@@ -1195,6 +1236,43 @@ const isOverdue=m=>m.upcoming===true&&m.date<todayStr();
 const isPast=m=>!m.upcoming;
 
 // Sıralama: tarih (yıl-ay-gün) + saat birlikte, en yeni en üstte
+// ════════════════════════════════════════════════════════════
+// SEZON SİSTEMİ
+// ════════════════════════════════════════════════════════════
+async function switchSeason(seasonId){
+  if(activeSeason === seasonId) return;
+  activeSeason = seasonId;
+  // Ücret ayarını sezona göre güncelle
+  UCRET_OZEL = getSeasonConfig().defaultOzelUcret;
+  const inp = document.getElementById('ozel-ucret-input');
+  if(inp) inp.value = UCRET_OZEL;
+  // Settings'e kaydet
+  try{ await window._FB.saveSettings(currentUser.uid, { activeSeason }); }catch(e){}
+  // matches'i filtrele
+  matches = allMatches.filter(m => m.season === activeSeason);
+  sortMatchesArray();
+  updateSeasonBtns();
+  // Tüm ekranları yenile
+  updateHeaderStats();
+  renderDashboard();
+  renderMatches();
+  renderCalendar();
+  renderAnalysis();
+  renderPartnersTab();
+  renderUcretTab();
+  showToast('📅 ' + (SEASONS.find(s=>s.id===seasonId)?.label||seasonId) + ' sezonu yüklendi');
+}
+
+function updateSeasonBtns(){
+  SEASONS.forEach(s => {
+    const btn = document.getElementById('season-btn-' + s.id.slice(0,4));
+    if(!btn) return;
+    const active = s.id === activeSeason;
+    btn.style.background = active ? 'var(--accent)' : 'transparent';
+    btn.style.color = active ? '#000' : 'var(--text3)';
+  });
+}
+
 let _toastTimer=null;
 function showToast(msg){
   const el=document.getElementById('toast');
@@ -1218,7 +1296,7 @@ function exportPDF(period){
     title = monthNames[parseInt(mo)-1] + ' ' + y + ' — Aylık Özet';
   } else {
     filteredMatches = matches.filter(m => !m.upcoming);
-    title = '2025-2026 Sezonu — Sezon Özeti';
+    title = activeSeason + ' Sezonu — Sezon Özeti';
   }
 
   if(!filteredMatches.length){ showToast('Bu dönemde maç yok!'); return; }
@@ -1246,7 +1324,7 @@ function exportPDF(period){
   if(period === 'monthly'){
     let ucretToplam=0, ucretOdenen=0, ucretBekleyen=0;
     const ucretRows = past.map(m=>{
-      const fee = m.matchType==='ozellig' ? UCRET_OZEL : 378.76;
+      const fee = getMatchFee(m);
       ucretToplam += fee;
       if(m.ucretOdendi) ucretOdenen += fee; else ucretBekleyen += fee;
       const durum = m.ucretOdendi
@@ -1480,7 +1558,7 @@ async function saveMatch(){
     ? (parseFloat(String(document.getElementById('m-ozel-ucret').value).replace(',','.')) || null)
     : null;
   const obj={
-    date,time,matchType,category:selectedCat,name,
+    season:activeSeason,date,time,matchType,category:selectedCat,name,
     homeTeam:homeVal,
     awayTeam:awayVal,
     league:'',
@@ -1800,6 +1878,7 @@ async function deleteMatch(id){
     const deleted = matches.find(m=>m.id===id);
     await window._FB.deleteMatchDB(currentUser.uid,id);
     matches=matches.filter(m=>m.id!==id);
+  allMatches=allMatches.filter(m=>m.id!==id);
     closeModal();updateHeaderStats();renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderPartnersTab();renderUcretTab();
     showToast('🗑️ Silindi.');
     if(deleted && deleted.upcoming){
@@ -2685,8 +2764,10 @@ function renderPartnersTab(){
 // ════════════════════════════════════════════════════════════
 // UCRET TAB
 // ════════════════════════════════════════════════════════════
-const UCRET_BOLGE = 378.76;
-let UCRET_OZEL  = 1200.00; // kullanıcı tarafından ayarlanabilir
+// Sezona göre dinamik ücretler
+function getSeasonConfig(){ return SEASONS.find(s=>s.id===activeSeason) || SEASONS[0]; }
+function UCRET_BOLGE_VAL(){ return getSeasonConfig().bolgeUcret; }
+let UCRET_OZEL  = 1200.00; // kullanıcı tarafından ayarlanabilir, sezon ayarından gelir
 
 let ucretStatusFilter = 'all';   // all | paid | unpaid
 let ucretTypeFilter   = 'all';   // all | bolge | okul | ozellig
@@ -2695,7 +2776,7 @@ function getMatchFee(m){
   if(m.matchType === 'ozellig'){
     return (m.ozelUcret && m.ozelUcret > 0) ? m.ozelUcret : UCRET_OZEL;
   }
-  return UCRET_BOLGE;
+  return UCRET_BOLGE_VAL();
 }
 
 async function saveOzelUcret(){
@@ -2782,7 +2863,7 @@ function renderRaporlar(){
   const mRated = monthly.filter(m=>m.rating>0);
   const mAvg = mRated.length ? (mRated.reduce((s,m)=>s+(m.rating||0),0)/mRated.length).toFixed(1) : '—';
   let mUcret = 0;
-  monthly.forEach(m=>{ mUcret += (m.matchType==='ozellig'?UCRET_OZEL:378.76); });
+  monthly.forEach(m=>{ mUcret += getMatchFee(m); });
   const ms = document.getElementById('rapor-monthly-stats');
   const statCard = (l,v,c) => `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${c};">${v}</div><div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${l}</div></div>`;
   if(ms) ms.innerHTML = [
@@ -2796,7 +2877,7 @@ function renderRaporlar(){
   const sRated = season.filter(m=>m.rating>0);
   const sAvg = sRated.length ? (sRated.reduce((s,m)=>s+(m.rating||0),0)/sRated.length).toFixed(1) : '—';
   let sUcret = 0;
-  season.forEach(m=>{ sUcret += (m.matchType==='ozellig'?UCRET_OZEL:378.76); });
+  season.forEach(m=>{ sUcret += getMatchFee(m); });
   const ss = document.getElementById('rapor-season-stats');
   if(ss) ss.innerHTML = [
     ['Toplam Maç', season.length, 'var(--accent)'],
@@ -2944,7 +3025,7 @@ async function saveSingleSyncMatch(idx){
     const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
       homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
       role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
-      rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+      season:activeSeason,rating:0,errors:[],comment:'',keymom:'',upcoming:true};
     const newId=await window._FB.addMatch(currentUser.uid,obj);
     matches.unshift({id:newId,...obj});
     syncFoundMatches.splice(idx,1);
@@ -2962,7 +3043,7 @@ async function saveAllSyncMatches(){
       const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
         homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
         role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
-        rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+        season:activeSeason,rating:0,errors:[],comment:'',keymom:'',upcoming:true};
       const newId=await window._FB.addMatch(currentUser.uid,obj);
       matches.unshift({id:newId,...obj}); saved++;
     }catch(e){console.error(e);}
