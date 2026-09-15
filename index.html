@@ -441,6 +441,17 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
       <div class="hstat"><div class="hstat-val" id="hstat-ozellig">0</div><div class="hstat-lbl">Özel Lig</div></div>
       <div class="hstat"><div class="hstat-val" id="hstat-okul">0</div><div class="hstat-lbl">Okul</div></div>
     </div>
+    <!-- Sezon seçici -->
+    <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;margin-right:8px;gap:2px;">
+      <button id="season-btn-2025" onclick="switchSeason('2025-2026')"
+        style="padding:4px 9px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all .2s;">
+        25-26
+      </button>
+      <button id="season-btn-2026" onclick="switchSeason('2026-2027')"
+        style="padding:4px 9px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all .2s;">
+        26-27
+      </button>
+    </div>
     <div class="user-badge">
       <div>
         <div class="user-name" id="user-name-display">—</div>
@@ -858,48 +869,63 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0;}
 
 <!-- UCRET TAB -->
 <div id="tab-ucret" class="panel">
-  <div class="section-title">💰 Ücret Hesabı</div>
 
-  <!-- Özel Lig Varsayılan Ücret Ayarı -->
-  <div class="card" style="margin-bottom:10px;border-color:rgba(245,166,35,.3);">
-    <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;">⭐ Özel Lig — Varsayılan Maç Ücreti</div>
-    <div style="display:flex;gap:7px;align-items:center;">
-      <input type="number" id="ozel-ucret-input" min="1" step="0.01" placeholder="1200" style="flex:1;margin-bottom:0;font-size:13px;font-weight:600;" autocomplete="off">
-      <span style="font-size:12px;color:var(--text3);white-space:nowrap;">₺ / maç</span>
-      <button class="btn btn-primary btn-sm" onclick="saveOzelUcret()" style="white-space:nowrap;">💾 Kaydet</button>
-    </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:5px;">Maç eklerken ücret girilmezse bu değer kullanılır. Her maça özel ücret için "Yeni Maç" formundan girilebilir.</div>
+  <!-- Başlık + sezon etiketi -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <div class="section-title" style="margin-bottom:0;">💰 Ücret Hesabı</div>
+    <span id="ucret-season-badge" style="font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 10px;border-radius:20px;background:rgba(245,166,35,.15);color:var(--accent);border:1px solid rgba(245,166,35,.3);"></span>
   </div>
 
-  <div class="stats-grid" style="margin-bottom:14px;">
-    <div class="stat-box">
-      <div class="stat-box-val" id="ucret-toplam" style="color:var(--good);">0 ₺</div>
-      <div class="stat-box-lbl">Toplam Hak Edilen</div>
+  <!-- Özet kartlar -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:.5px;margin-bottom:4px;">HAK EDİLEN</div>
+      <div id="ucret-toplam" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--good);">0 ₺</div>
+      <div id="ucret-mac-sayisi-lbl" style="font-size:10px;color:var(--text3);margin-top:2px;">0 maç</div>
     </div>
-    <div class="stat-box">
-      <div class="stat-box-val" id="ucret-odenen" style="color:var(--accent);">0 ₺</div>
-      <div class="stat-box-lbl">Ödenen</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-val" id="ucret-bekleyen" style="color:var(--warn);">0 ₺</div>
-      <div class="stat-box-lbl">Bekleyen</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-val" id="ucret-mac-sayisi" style="color:var(--text);">0</div>
-      <div class="stat-box-lbl">Toplam Maç</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:.5px;margin-bottom:4px;">BEKLEYEN</div>
+      <div id="ucret-bekleyen" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--warn);">0 ₺</div>
+      <div id="ucret-odenen-lbl" style="font-size:10px;color:var(--text3);margin-top:2px;">ödenen: 0 ₺</div>
     </div>
   </div>
 
-  <!-- Bölge ek ödeme özeti -->
-  <div id="ucret-ek-summary" style="display:none;gap:6px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.2);border-radius:8px;margin-bottom:10px;"></div>
+  <!-- Bölge ek ödeme özet kartı (gizli, bölge maçı varsa gösterilir) -->
+  <div id="ucret-ek-card" style="display:none;background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.25);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+    <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-bottom:8px;">📋 BÖLGE EK ÖDEMESİ</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
+      <div>
+        <div id="ek-toplam" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text);">0 ₺</div>
+        <div style="font-size:9px;color:var(--text3);">TOPLAM</div>
+      </div>
+      <div>
+        <div id="ek-alinan" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--good);">0 ₺</div>
+        <div style="font-size:9px;color:var(--text3);">ALINAN</div>
+      </div>
+      <div>
+        <div id="ek-bekleyen" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--warn);">0 ₺</div>
+        <div style="font-size:9px;color:var(--text3);">BEKLEYEN</div>
+      </div>
+    </div>
+  </div>
 
-  <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;">
+  <!-- Özel Lig ücret ayarı -->
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <span style="font-size:10px;color:var(--text3);white-space:nowrap;">⭐ Özel Lig varsayılan:</span>
+    <input type="number" id="ozel-ucret-input" min="1" step="0.01" placeholder="1700"
+      style="width:90px;margin-bottom:0;font-size:12px;font-weight:600;padding:5px 8px;flex-shrink:0;" autocomplete="off">
+    <span style="font-size:11px;color:var(--text3);">₺</span>
+    <button class="btn btn-primary btn-sm" onclick="saveOzelUcret()" style="margin-left:auto;white-space:nowrap;padding:5px 12px;">Kaydet</button>
+  </div>
+
+  <!-- Filtreler -->
+  <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;">
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('all','status')" id="ucret-f-all" style="border-color:var(--accent);color:var(--accent);">Tümü</button>
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('unpaid','status')" id="ucret-f-unpaid">Ödenmeyenler</button>
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('paid','status')" id="ucret-f-paid">Ödenenler</button>
   </div>
-  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
-    <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('all','type')" id="ucret-t-all" style="border-color:var(--accent);color:var(--accent);">Tüm Maçlar</button>
+  <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('all','type')" id="ucret-t-all" style="border-color:var(--accent);color:var(--accent);">Tümü</button>
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('bolge','type')" id="ucret-t-bolge">Bölge</button>
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('okul','type')" id="ucret-t-okul">Okul</button>
     <button class="btn btn-ghost btn-sm" onclick="setUcretFilter('ozellig','type')" id="ucret-t-ozellig">Özel Lig</button>
@@ -1013,7 +1039,9 @@ const ERROR_CATS=[
 // STATE
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;   // { uid, firstName, lastName, category, username }
-let matches      = [];     // Firestore'dan yüklenir
+let matches      = [];     // aktif sezon filtrelidir
+let allMatches   = [];     // tüm sezonların ham verisi
+let activeSeason = '2026-2027';  // aktif sezon
 let goals        = JSON.parse(localStorage.getItem('hd_goals')||'[]');
 let quizHist     = JSON.parse(localStorage.getItem('hd_quiz')||'[]');
 let editingId    = null;
@@ -1126,7 +1154,7 @@ function doLogout(){
   if(!confirm('Çıkmak istiyor musun?'))return;
   localStorage.removeItem('hd_session');
   sessionStorage.removeItem('hd_session');
-  currentUser=null;matches=[];
+  currentUser=null;matches=[];allMatches=[];
   autoSyncDone=false;
   showAuthScreen();
 }
@@ -1142,7 +1170,22 @@ async function initApp(){
   document.getElementById('user-cat-display').textContent=currentUser.category||'';
   // Maçları Firestore'dan yükle
   try{
-    matches=await window._FB.loadMatches(currentUser.uid);
+    allMatches = await window._FB.loadMatches(currentUser.uid);
+    // Migration: season alanı olmayan eski maçları 2025-2026 olarak etiketle
+    const needsTag = allMatches.filter(m => !m.season);
+    if(needsTag.length > 0){
+      for(const m of needsTag){
+        m.season = '2025-2026';
+        try{ await window._FB.updateMatch(currentUser.uid, m.id, { season: '2025-2026' }); }catch(e){}
+      }
+    }
+    // Aktif sezonu settings'ten yükle
+    try{
+      const s = await window._FB.loadSettings(currentUser.uid);
+      if(s.activeSeason && SEASONS[s.activeSeason]) activeSeason = s.activeSeason;
+    }catch(e){}
+    UCRET_OZEL = getSeasonCfg().ozelUcret;
+    matches = allMatches.filter(m => (m.season || '2025-2026') === activeSeason);
     try{ goals = await window._FB.fetchGoals(currentUser.uid); } catch(e){ goals = JSON.parse(localStorage.getItem(goalsKey())||'[]'); }
     try{ quizHist = await window._FB.fetchQuizHist(currentUser.uid); } catch(e){ quizHist = JSON.parse(localStorage.getItem(quizHistKey())||'[]'); }
   }catch(e){console.error('Maçlar yüklenemedi:',e);matches=[];}
@@ -1156,6 +1199,7 @@ async function initApp(){
   renderErrorTags();
   renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
   updateHeaderStats();
+  updateSeasonBtns();
   // Bölge linkini Firebase'den çek, sonra otomatik tara
   setTimeout(async ()=>{
     try{
@@ -1188,6 +1232,8 @@ async function autoMarkOverdueMatches(){
       await window._FB.updateMatch(currentUser.uid, m.id, {...m, upcoming:false});
       const idx = matches.findIndex(x=>x.id===m.id);
       if(idx>=0) matches[idx] = {...m, upcoming:false};
+      const ai=allMatches.findIndex(x=>x.id===m.id);
+      if(ai>=0) allMatches[ai]={...m, upcoming:false};
     }catch(e){ console.error('autoMark hatası:', e); }
   }
 }
@@ -1199,6 +1245,37 @@ const isOverdue=m=>m.upcoming===true&&m.date<todayStr();
 const isPast=m=>!m.upcoming;
 
 // Sıralama: tarih (yıl-ay-gün) + saat birlikte, en yeni en üstte
+// ════════════════════════════════════════════════════════════
+// SEZON SİSTEMİ
+// ════════════════════════════════════════════════════════════
+async function switchSeason(sid){
+  if(activeSeason === sid) return;
+  activeSeason = sid;
+  UCRET_OZEL = getSeasonCfg().ozelUcret;
+  const inp = document.getElementById('ozel-ucret-input');
+  if(inp) inp.value = UCRET_OZEL;
+  try{ await window._FB.saveSettings(currentUser.uid, { activeSeason }); }catch(e){}
+  matches = allMatches.filter(m => (m.season||'2025-2026') === activeSeason);
+  sortMatchesArray();
+  updateSeasonBtns();
+  updateHeaderStats();
+  renderDashboard();renderMatches();renderCalendar();renderAnalysis();
+  renderPartnersTab();renderUcretTab();renderRaporlar();
+  showToast('📅 ' + sid + ' sezonu yüklendi');
+}
+
+function updateSeasonBtns(){
+  const ids = {'2025-2026':'season-btn-2025','2026-2027':'season-btn-2026'};
+  Object.entries(ids).forEach(([sid, btnId])=>{
+    const b = document.getElementById(btnId);
+    if(!b) return;
+    const active = sid === activeSeason;
+    b.style.background = active ? 'var(--accent)' : 'transparent';
+    b.style.color = active ? '#1a0f00' : 'var(--text3)';
+  });
+}
+
+
 let _toastTimer=null;
 function showToast(msg){
   const el=document.getElementById('toast');
@@ -1484,7 +1561,7 @@ async function saveMatch(){
     ? (parseFloat(String(document.getElementById('m-ozel-ucret').value).replace(',','.')) || null)
     : null;
   const obj={
-    date,time,matchType,category:selectedCat,name,
+    season:activeSeason,date,time,matchType,category:selectedCat,name,
     homeTeam:homeVal,
     awayTeam:awayVal,
     league:'',
@@ -1804,6 +1881,7 @@ async function deleteMatch(id){
     const deleted = matches.find(m=>m.id===id);
     await window._FB.deleteMatchDB(currentUser.uid,id);
     matches=matches.filter(m=>m.id!==id);
+  allMatches=allMatches.filter(m=>m.id!==id);
     closeModal();updateHeaderStats();renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderPartnersTab();renderUcretTab();
     showToast('🗑️ Silindi.');
     if(deleted && deleted.upcoming){
@@ -2799,9 +2877,28 @@ async function toggleEkOdeme(matchId, currentVal){
     await window._FB.updateMatch(currentUser.uid, matchId, { ekOdemeOdendi: newVal });
     const m = matches.find(x => x.id === matchId);
     if(m) m.ekOdemeOdendi = newVal;
-    // allMatches'i de güncelle
-    const am = (typeof allMatches !== 'undefined' ? allMatches : matches).find(x => x.id === matchId);
+    const am = allMatches.find(x => x.id === matchId);
     if(am) am.ekOdemeOdendi = newVal;
+    renderUcretTab();
+    showToast(newVal ? '✅ Ek ödeme alındı!' : '↩️ Ek ödeme geri alındı.');
+  } catch(e){
+    showToast('❌ Güncelleme hatası: ' + e.message);
+  }
+}
+
+// Günlük tek buton: o günkü tüm bölge maçlarının ek ödemesini toggle
+async function toggleGunEkOdeme(grpKey, currentPaid){
+  const newVal = !currentPaid;
+  const grpBolge = matches.filter(m => !m.upcoming && groupKey(m) === grpKey && m.matchType === 'bolge');
+  try{
+    await Promise.all(grpBolge.map(m =>
+      window._FB.updateMatch(currentUser.uid, m.id, { ekOdemeOdendi: newVal })
+    ));
+    grpBolge.forEach(m => {
+      m.ekOdemeOdendi = newVal;
+      const am = allMatches.find(x=>x.id===m.id);
+      if(am) am.ekOdemeOdendi = newVal;
+    });
     renderUcretTab();
     showToast(newVal ? '✅ Ek ödeme alındı!' : '↩️ Ek ödeme geri alındı.');
   } catch(e){
@@ -2858,71 +2955,72 @@ function renderRaporlar(){
 }
 
 function renderUcretTab(){
-  const inp = document.getElementById('ozel-ucret-input');
   const cfg = getSeasonCfg();
+  const inp = document.getElementById('ozel-ucret-input');
   if(inp && !inp.matches(':focus')) inp.value = UCRET_OZEL;
 
-  const playedMatches = matches.filter(m => !m.upcoming);
+  // Sezon rozeti
+  const badge = document.getElementById('ucret-season-badge');
+  if(badge) badge.textContent = activeSeason;
 
-  // Toplam: maç ücreti + ek ödemeler
-  let toplamMac=0, toplamEk=0, odenenMac=0, odenenEk=0;
-  for(const m of playedMatches){
+  const played = matches.filter(m => !m.upcoming);
+
+  // Toplam hesapla — maç ücreti ayrı, ek ödeme ayrı
+  let topMac=0, topEk=0, odMac=0, odEk=0;
+  for(const m of played){
     const fee = getMatchFee(m);
     const ek  = getEkOdeme(m);
-    toplamMac += fee; toplamEk += ek;
-    if(m.ucretOdendi)   odenenMac += fee;
-    if(m.ekOdemeOdendi) odenenEk  += ek;
+    topMac += fee; topEk += ek;
+    if(m.ucretOdendi)   odMac += fee;
+    if(m.ekOdemeOdendi) odEk  += ek;
   }
-  const toplam   = toplamMac + toplamEk;
-  const odenen   = odenenMac + odenenEk;
+  const toplam   = topMac + topEk;
+  const odenen   = odMac  + odEk;
   const bekleyen = toplam - odenen;
 
-  const fmt = n => n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '\u20ba';
+  const fmt = n => n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' \u20ba';
   const el = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  el('ucret-toplam',     fmt(toplam));
-  el('ucret-odenen',     fmt(odenen));
-  el('ucret-bekleyen',   fmt(bekleyen));
-  el('ucret-mac-sayisi', playedMatches.length);
+  el('ucret-toplam',    fmt(toplam));
+  el('ucret-bekleyen',  fmt(bekleyen));
+  el('ucret-odenen-lbl','odenen: '+fmt(odenen));
+  el('ucret-mac-sayisi-lbl', played.length+' ma\u00e7');
 
-  // Ek ödeme özet satırı
-  const ekSummEl = document.getElementById('ucret-ek-summary');
-  if(ekSummEl){
-    if(toplamEk > 0){
-      ekSummEl.style.display = 'flex';
-      ekSummEl.innerHTML =
-        `<span style="color:var(--text3);font-size:10px;">B\u00f6lge Ek \u00d6deme \u2014</span>`+
-        `<span style="color:var(--accent);font-weight:700;font-size:10px;">&nbsp;Toplam: ${fmt(toplamEk)}</span>`+
-        `<span style="color:var(--good);font-size:10px;">&nbsp;\u00b7 Al\u0131nan: ${fmt(odenenEk)}</span>`+
-        `<span style="color:var(--warn);font-size:10px;">&nbsp;\u00b7 Bekleyen: ${fmt(toplamEk-odenenEk)}</span>`;
+  // Ek ödeme kartı
+  const ekCard = document.getElementById('ucret-ek-card');
+  if(ekCard){
+    if(topEk > 0){
+      ekCard.style.display = 'block';
+      el('ek-toplam',   fmt(topEk));
+      el('ek-alinan',   fmt(odEk));
+      el('ek-bekleyen', fmt(topEk-odEk));
     } else {
-      ekSummEl.style.display = 'none';
+      ekCard.style.display = 'none';
     }
   }
 
   // Grupla: tarih + macTipi
   const groupMap = {};
-  for(const m of playedMatches){
+  for(const m of played){
     const k = groupKey(m);
     if(!groupMap[k]) groupMap[k] = [];
     groupMap[k].push(m);
   }
 
+  // Filtrele
   let groups = Object.entries(groupMap);
   if(ucretTypeFilter !== 'all')
     groups = groups.filter(([,ms]) => ms[0].matchType === ucretTypeFilter);
   if(ucretStatusFilter === 'paid')
     groups = groups.filter(([,ms]) => {
-      const macP = groupPaid(ms);
-      const bolgeMs = ms.filter(m=>m.matchType==='bolge');
-      const ekP = bolgeMs.length===0 || bolgeMs.every(m=>!!m.ekOdemeOdendi);
-      return macP && ekP;
+      const mp = groupPaid(ms);
+      const bms = ms.filter(m=>m.matchType==='bolge');
+      return mp && (bms.length===0 || bms.every(m=>!!m.ekOdemeOdendi));
     });
   else if(ucretStatusFilter === 'unpaid')
     groups = groups.filter(([,ms]) => {
-      const macP = groupPaid(ms);
-      const bolgeMs = ms.filter(m=>m.matchType==='bolge');
-      const ekP = bolgeMs.length===0 || bolgeMs.every(m=>!!m.ekOdemeOdendi);
-      return !macP || !ekP;
+      const mp = groupPaid(ms);
+      const bms = ms.filter(m=>m.matchType==='bolge');
+      return !mp || (bms.length>0 && !bms.every(m=>!!m.ekOdemeOdendi));
     });
 
   groups.sort(([a],[b]) => b.localeCompare(a));
@@ -2938,73 +3036,83 @@ function renderUcretTab(){
   const DAYS=['Pazar','Pazartesi','Sal\u0131','\u00c7ar\u015famba','Per\u015fembe','Cuma','Cumartesi'];
 
   listEl.innerHTML = groups.map(([key, ms]) => {
-    const paid = groupPaid(ms);
-    const totalMacFee = ms.reduce((s,m) => s+getMatchFee(m), 0);
-    const bolgeMs     = ms.filter(m=>m.matchType==='bolge');
-    const totalEkFee  = bolgeMs.reduce((s,m) => s+getEkOdeme(m), 0);
-    const ekPaid      = bolgeMs.length>0 && bolgeMs.every(m=>!!m.ekOdemeOdendi);
-    const allSettled  = paid && (bolgeMs.length===0 || ekPaid);
+    const macPaid   = groupPaid(ms);
+    const bolgeMac  = ms.filter(m=>m.matchType==='bolge');
+    const hasBolge  = bolgeMac.length > 0;
+    const ekFeeGrp  = bolgeMac.reduce((s,m)=>s+getEkOdeme(m), 0);
+    const ekPaidGrp = hasBolge && bolgeMac.every(m=>!!m.ekOdemeOdendi);
+    const macFeeGrp = ms.reduce((s,m)=>s+getMatchFee(m), 0);
+    const allOk     = macPaid && (!hasBolge || ekPaidGrp);
 
     const firstM = ms[0];
     const matchType = firstM.matchType||'bolge';
     const typeLbl  = matchType==='ozellig'?'\u00d6zel Lig':matchType==='okul'?'Okul':'B\u00f6lge';
     const typeColor= matchType==='ozellig'?'var(--accent)':matchType==='okul'?'var(--accent3)':'var(--warn)';
-    const typeBg   = matchType==='ozellig'?'rgba(245,166,35,.1)':matchType==='okul'?'rgba(61,184,160,.1)':'rgba(245,166,35,.07)';
+    const typeBg   = matchType==='ozellig'?'rgba(245,166,35,.12)':matchType==='okul'?'rgba(61,184,160,.1)':'rgba(245,166,35,.08)';
     const [yy,mm,dd]=(firstM.date||'').split('-');
     const dateStr=(dd&&mm)?`${dd}.${mm}.${yy}`:(firstM.date||'');
     const dayName=firstM.date?DAYS[new Date(firstM.date+'T12:00:00').getDay()]:'';
     const monLbl=mm?MONTHS[parseInt(mm)-1]:'';
 
+    // Maç satırları
     const macRows = ms.map(m => {
-      const isBolge = m.matchType==='bolge';
-      const ek = getEkOdeme(m);
-      const ekOdendi = !!m.ekOdemeOdendi;
       const parts=[
         m.time    ?'\u23f0 '+m.time    :'',
         m.venue   ?'\ud83d\udccd '+m.venue   :'',
         m.category?'\ud83c\udff7 '+m.category:'',
         m.role    ?'\ud83d\udc64 '+m.role    :''
       ].filter(Boolean).join(' \u00b7 ');
-      return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
+      return `<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);">
         <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;">${m.name||'Ma\u00e7'}</div>
-        ${parts?`<div style="font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:4px;">${parts}</div>`:''}
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
-          <span style="font-size:10px;font-family:'Bebas Neue',sans-serif;color:${paid?'var(--good)':'var(--warn)'};">Ma\u00e7: ${getMatchFee(m).toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</span>
-          ${isBolge&&ek>0?`<div style="display:flex;align-items:center;gap:4px;">
-            <span style="font-size:10px;color:var(--text3);">Ek:</span>
-            <span style="font-size:10px;font-family:'Bebas Neue',sans-serif;color:${ekOdendi?'var(--good)':'var(--accent)'};">${ek.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</span>
-            <button onclick="toggleEkOdeme('${m.id}',${ekOdendi})"
-              style="padding:2px 7px;border-radius:4px;border:1px solid ${ekOdendi?'var(--good)':'var(--accent)'};background:${ekOdendi?'rgba(61,184,160,.12)':'rgba(245,166,35,.1)'};color:${ekOdendi?'var(--good)':'var(--accent)'};font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
-              ${ekOdendi?'\u2705 Al\u0131nd\u0131':'\u23f3 Bekleniyor'}
-            </button>
-          </div>`:''}
+        ${parts?`<div style="font-size:10px;color:var(--text3);line-height:1.5;">${parts}</div>`:''}
+        <div style="font-size:10px;font-family:'Bebas Neue',sans-serif;color:${macPaid?'var(--good)':'var(--text3)'};margin-top:3px;">
+          Ma\u00e7 \u00fccreti: ${getMatchFee(m).toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba
         </div>
       </div>`;
     }).join('');
 
-    const safeKey=key.replace(/'/g,"\\'");
-    return `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border-color:${allSettled?'rgba(61,184,160,.3)':'var(--border)'};">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);">
+    // Bölge ek ödeme satırı — günlük tek buton
+    const safeKey = key.replace(/'/g,"\\'");
+    const ekRow = hasBolge && ekFeeGrp > 0 ? `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(245,166,35,.2);margin-top:2px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--accent);">Ek \u00d6deme (B\u00f6lge)</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:${ekPaidGrp?'var(--good)':'var(--accent)'};">${ekFeeGrp.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
+          <div style="font-size:9px;color:var(--text3);">${bolgeMac.length} ma\u00e7 \xd7 ${getEkOdeme(bolgeMac[0]).toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
+        </div>
+        <button onclick="toggleGunEkOdeme('${safeKey}',${ekPaidGrp})"
+          style="padding:8px 14px;border-radius:8px;border:1px solid ${ekPaidGrp?'var(--good)':'var(--accent)'};background:${ekPaidGrp?'rgba(61,184,160,.15)':'rgba(245,166,35,.12)'};color:${ekPaidGrp?'var(--good)':'var(--accent)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;min-width:90px;text-align:center;">
+          ${ekPaidGrp?'\u2705 Al\u0131nd\u0131':'\u23f3 Bekleniyor'}
+        </button>
+      </div>` : '';
+
+    return `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;border:1px solid ${allOk?'rgba(61,184,160,.35)':'var(--border)'};border-radius:12px;">
+      <!-- Kart başlığı -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:4px 8px;min-width:40px;">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--accent);">${dd||'\u2014'}</div>
+          <div style="text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 9px;min-width:42px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:var(--accent);">${dd||'\u2014'}</div>
             <div style="font-size:8px;color:var(--text3);letter-spacing:1px;">${monLbl}</div>
           </div>
           <div>
-            <div style="font-size:11px;font-weight:700;color:var(--text);">${dayName}${dayName?', ':''}${dateStr}</div>
-            <div style="margin-top:3px;display:inline-block;padding:1px 8px;border-radius:20px;font-size:9px;font-weight:700;color:${typeColor};background:${typeBg};">${typeLbl} \u2014 ${ms.length} ma\u00e7</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${dayName}${dayName?', ':''}${dateStr}</div>
+            <div style="margin-top:3px;display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:700;color:${typeColor};background:${typeBg};">
+              ${typeLbl} &nbsp;&middot;&nbsp; ${ms.length} ma\u00e7
+            </div>
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:${paid?'var(--good)':'var(--warn)'};">${totalMacFee.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
-          ${totalEkFee>0?`<div style="font-size:9px;color:${ekPaid?'var(--good)':'var(--accent)'};margin-bottom:2px;">+${totalEkFee.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba ek</div>`:''}
-          <button onclick="toggleGrupOdendi('${safeKey}',${paid})"
-            style="padding:3px 8px;border-radius:5px;border:1px solid ${paid?'var(--good)':'var(--border)'};background:${paid?'rgba(61,184,160,.12)':'var(--surface)'};color:${paid?'var(--good)':'var(--text3)'};font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-            ${paid?'\u2705 Ma\u00e7 \u00d6dendi':'\u25a1 Ma\u00e7 \u00d6denmedi'}
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:19px;color:${macPaid?'var(--good)':'var(--warn)'};">${macFeeGrp.toLocaleString('tr-TR',{minimumFractionDigits:2})} \u20ba</div>
+          <button onclick="toggleGrupOdendi('${safeKey}',${macPaid})"
+            style="margin-top:4px;padding:4px 11px;border-radius:6px;border:1px solid ${macPaid?'var(--good)':'var(--border)'};background:${macPaid?'rgba(61,184,160,.12)':'var(--surface)'};color:${macPaid?'var(--good)':'var(--text3)'};font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            ${macPaid?'\u2705 Ma\u00e7 \u00d6dendi':'\u25a1 \u00d6denmedi'}
           </button>
         </div>
       </div>
-      <div style="padding:0 12px;">${macRows}</div>
+      <!-- Maç detayları -->
+      <div style="padding:0 14px;">${macRows}</div>
+      <!-- Ek ödeme -->
+      ${ekRow ? `<div style="padding:0 14px;">${ekRow}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3047,6 +3155,7 @@ async function saveSingleSyncMatch(idx){
       rating:0,errors:[],comment:'',keymom:'',upcoming:true};
     const newId=await window._FB.addMatch(currentUser.uid,obj);
     matches.unshift({id:newId,...obj});
+    allMatches.unshift({id:newId,...obj});
     syncFoundMatches.splice(idx,1);
     renderSyncResults(); updateHeaderStats(); renderDashboard();
     showToast('✅ Atama kaydedildi!');
@@ -3064,7 +3173,7 @@ async function saveAllSyncMatches(){
         role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
         rating:0,errors:[],comment:'',keymom:'',upcoming:true};
       const newId=await window._FB.addMatch(currentUser.uid,obj);
-      matches.unshift({id:newId,...obj}); saved++;
+      matches.unshift({id:newId,...obj}); allMatches.unshift({id:newId,...obj}); saved++;
     }catch(e){console.error(e);}
   }
   syncFoundMatches=[];
