@@ -1039,9 +1039,30 @@ const ERROR_CATS=[
 // STATE
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;   // { uid, firstName, lastName, category, username }
+// ── Sezon ücret tarifesi (globals'ta olmalı — initApp öncesi) ──
+const SEASONS = {
+  '2025-2026': {
+    label:      '2025-2026',
+    bolgeUcret:  378.76,
+    okulUcret:   378.76,
+    bolgeEk:     396.00,
+    ozelUcret:   1200.00,
+  },
+  '2026-2027': {
+    label:      '2026-2027',
+    bolgeUcret:  429.98,
+    okulUcret:   429.98,
+    bolgeEk:     580.00,
+    ozelUcret:   1700.00,
+  },
+};
+
+function getSeasonCfg(){ return SEASONS[activeSeason] || SEASONS['2025-2026']; }
+
 let matches      = [];     // aktif sezon filtrelidir
 let allMatches   = [];     // tüm sezonların ham verisi
 let activeSeason = '2026-2027';  // aktif sezon
+let UCRET_OZEL   = 1700.00;       // runtime'da sezona göre set edilir
 let goals        = JSON.parse(localStorage.getItem('hd_goals')||'[]');
 let quizHist     = JSON.parse(localStorage.getItem('hd_quiz')||'[]');
 let editingId    = null;
@@ -2768,28 +2789,7 @@ function renderPartnersTab(){
 // UCRET TAB
 // ════════════════════════════════════════════════════════════
 
-// Sezon bazlı ücret tarifesi
-const SEASONS = {
-  '2025-2026': {
-    label:       '2025-2026',
-    bolgeUcret:  378.76,   // Bölge maçı temel ücreti
-    okulUcret:   378.76,   // Okul maçı ücreti
-    bolgeEk:     396.00,   // Bölge maçı ek ödemesi (2 ayda bir)
-    ozelUcret:   1200.00,  // Özel lig varsayılan
-  },
-  '2026-2027': {
-    label:       '2026-2027',
-    bolgeUcret:  429.98,
-    okulUcret:   429.98,
-    bolgeEk:     580.00,
-    ozelUcret:   1700.00,
-  },
-};
 
-let activeSeason    = '2026-2027';  // aktif sezon
-let UCRET_OZEL      = 1700.00;      // runtime'da sezona göre set edilir
-
-function getSeasonCfg(){ return SEASONS[activeSeason] || SEASONS['2025-2026']; }
 
 // Maçın temel ücreti (ek ödeme hariç)
 function getMatchFee(m){
