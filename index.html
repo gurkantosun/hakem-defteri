@@ -1348,62 +1348,63 @@ function exportPDF(period){
   if(period === 'monthly'){
     let ucretToplam=0, ucretOdenen=0, ucretBekleyen=0;
     let ekToplam=0, ekAlinan=0, ekBekleyen=0;
-    const ucretRows = past.map(m=>{
+
+    const ucretRows = past.map(function(m){
       const fee = getMatchFee(m);
       const ek  = getEkOdeme(m);
       ucretToplam += fee + ek;
       if(m.ucretOdendi)   ucretOdenen  += fee; else ucretBekleyen += fee;
       if(ek > 0){ ekToplam += ek; if(m.ekOdemeOdendi) ekAlinan += ek; else ekBekleyen += ek; }
+
       const macDurum = m.ucretOdendi
-        ? '<span style="color:#155724;font-weight:700;">✓ Ödendi</span>'
-        : '<span style="color:#856404;font-weight:700;">⏳ Bekliyor</span>';
+        ? '<span style="color:#155724;font-weight:700;">\u2713 \u00d6dendi</span>'
+        : '<span style="color:#856404;font-weight:700;">\u23f3 Bekliyor</span>';
       const ekDurum = ek > 0
         ? (m.ekOdemeOdendi
-            ? '<span style="color:#155724;font-weight:700;">✓ Alındı</span>'
-            : '<span style="color:#856404;font-weight:700;">⏳ Bekliyor</span>')
-        : '<span style="color:#aaa;">—</span>';
-      return \`<tr>
-        <td>\${m.date||'—'}</td>
-        <td>\${m.name||m.venue||'—'}</td>
-        <td>\${m.matchType==='bolge'?'Bölge':m.matchType==='ozellig'?'Özel Lig':'Okul'}</td>
-        <td style="text-align:right;">\${fee.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</td>
-        <td style="text-align:center;">\${macDurum}</td>
-        <td style="text-align:right;">\${ek>0?ek.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺':'—'}</td>
-        <td style="text-align:center;">\${ekDurum}</td>
-      </tr>\`;
+            ? '<span style="color:#155724;font-weight:700;">\u2713 Al\u0131nd\u0131</span>'
+            : '<span style="color:#856404;font-weight:700;">\u23f3 Bekliyor</span>')
+        : '<span style="color:#aaa;">\u2014</span>';
+
+      return '<tr>'
+        + '<td>' + (m.date||'\u2014') + '</td>'
+        + '<td>' + (m.name||m.venue||'\u2014') + '</td>'
+        + '<td>' + (m.matchType==='bolge'?'B\u00f6lge':m.matchType==='ozellig'?'\u00d6zel Lig':'Okul') + '</td>'
+        + '<td style="text-align:right;">' + fee.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</td>'
+        + '<td style="text-align:center;">' + macDurum + '</td>'
+        + '<td style="text-align:right;">' + (ek>0 ? ek.toLocaleString('tr-TR',{minimumFractionDigits:2})+' \u20ba' : '\u2014') + '</td>'
+        + '<td style="text-align:center;">' + ekDurum + '</td>'
+        + '</tr>';
     }).join('');
 
-    const ekSatir = ekToplam > 0 ? \`
-      <div style="margin-top:8px;padding:8px 10px;background:#fff8e7;border:1px solid #f5a62340;border-radius:6px;">
-        <div style="font-size:9px;font-weight:700;color:#856404;letter-spacing:.4px;margin-bottom:4px;">📋 BÖLGE EK ÖDEMESİ</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
-          <div><div style="font-size:14px;font-weight:800;color:#1a1a2e;">\${ekToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div style="font-size:8px;color:#777;">TOPLAM</div></div>
-          <div><div style="font-size:14px;font-weight:800;color:#155724;">\${ekAlinan.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div style="font-size:8px;color:#777;">ALINAN</div></div>
-          <div><div style="font-size:14px;font-weight:800;color:#856404;">\${ekBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div style="font-size:8px;color:#777;">BEKLEYEN</div></div>
-        </div>
-      </div>\` : '';
+    const ekSatirHTML = ekToplam > 0
+      ? '<div style="margin-top:8px;padding:8px 10px;background:#fff8e7;border:1px solid rgba(245,166,35,.4);border-radius:6px;">'
+        + '<div style="font-size:9px;font-weight:700;color:#856404;letter-spacing:.4px;margin-bottom:4px;">B\u00d6LGE EK \u00d6DEMES\u0130</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">'
+        + '<div><div style="font-size:14px;font-weight:800;color:#1a1a2e;">' + ekToplam.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div style="font-size:8px;color:#777;">TOPLAM</div></div>'
+        + '<div><div style="font-size:14px;font-weight:800;color:#155724;">' + ekAlinan.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div style="font-size:8px;color:#777;">ALINAN</div></div>'
+        + '<div><div style="font-size:14px;font-weight:800;color:#856404;">' + (ekToplam-ekAlinan).toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div style="font-size:8px;color:#777;">BEKLEYEN</div></div>'
+        + '</div></div>'
+      : '';
 
-    ucretOdenen += ekAlinan;
-    ucretBekleyen += ekBekleyen;
+    ucretOdenen  += ekAlinan;
+    ucretBekleyen += (ekToplam - ekAlinan);
 
-    ucretSection = \`<div class="section"><h2>💰 Ücret Özeti</h2>
-      <div class="grid3" style="margin-bottom:8px;">
-        <div class="stat"><div class="stat-val" style="color:#2d6a4f;">\${ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Toplam Hak Edilen</div></div>
-        <div class="stat"><div class="stat-val" style="color:#155724;">\${ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Ödenen</div></div>
-        <div class="stat"><div class="stat-val" style="color:#856404;">\${ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺</div><div class="stat-lbl">Bekleyen</div></div>
-      </div>
-      \${ekSatir}
-      <div style="margin-top:8px;">
-        <table><thead><tr>
-          <th>Tarih</th><th>Maç</th><th>Tür</th>
-          <th style="text-align:right;">Maç Ücreti</th><th style="text-align:center;">Durum</th>
-          <th style="text-align:right;">Ek Ödeme</th><th style="text-align:center;">Ek Durum</th>
-        </tr></thead>
-        <tbody>\${ucretRows}</tbody></table>
-      </div>
-    </div>\`;
+    ucretSection = '<div class="section"><h2>\ud83d\udcb0 \u00dccret \u00d6zeti</h2>'
+      + '<div class="grid3" style="margin-bottom:8px;">'
+      + '<div class="stat"><div class="stat-val" style="color:#2d6a4f;">' + ucretToplam.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div class="stat-lbl">Toplam Hak Edilen</div></div>'
+      + '<div class="stat"><div class="stat-val" style="color:#155724;">' + ucretOdenen.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div class="stat-lbl">\u00d6denen</div></div>'
+      + '<div class="stat"><div class="stat-val" style="color:#856404;">' + ucretBekleyen.toLocaleString('tr-TR',{minimumFractionDigits:2}) + ' \u20ba</div><div class="stat-lbl">Bekleyen</div></div>'
+      + '</div>'
+      + ekSatirHTML
+      + '<div style="margin-top:8px;">'
+      + '<table><thead><tr>'
+      + '<th>Tarih</th><th>Ma\u00e7</th><th>T\u00fcr</th>'
+      + '<th style="text-align:right;">Ma\u00e7 \u00dccreti</th><th style="text-align:center;">Durum</th>'
+      + '<th style="text-align:right;">Ek \u00d6deme</th><th style="text-align:center;">Ek Durum</th>'
+      + '</tr></thead>'
+      + '<tbody>' + ucretRows + '</tbody></table>'
+      + '</div></div>';
   }
-
   const errRows  = topErrors.map((e,i)=>`<tr><td>${i+1}</td><td>${e[0]}</td><td style="text-align:center;font-weight:700;">${e[1]}</td></tr>`).join('');
   const partRows = topPartners.map((p,i)=>`<tr><td>${i+1}</td><td>${p[0]}</td><td style="text-align:center;font-weight:700;">${p[1]}</td></tr>`).join('');
   const matchRows = past.map(m=>{
