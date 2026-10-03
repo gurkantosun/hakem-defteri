@@ -1320,7 +1320,7 @@ function exportPDF(period){
     title = monthNames[parseInt(mo)-1] + ' ' + y + ' — Aylık Özet';
   } else {
     filteredMatches = matches.filter(m => !m.upcoming);
-    title = '2025-2026 Sezonu — Sezon Özeti';
+    title = activeSeason + ' Sezonu — Sezon Özeti';
   }
 
   if(!filteredMatches.length){ showToast('Bu dönemde maç yok!'); return; }
@@ -2469,10 +2469,10 @@ async function autoSyncOnLoad(){
       if(programChanged) anyProgramChanged = true;
 
       const found = parseRowsToMatches(rows, type, userName);
+      // allMatches: tüm sezonlar — kaçırma olmasın
       const newOnes = found.filter(m => {
-        // Kayıtlı mı? upcoming veya geçmiş — tüm maçlara bak
         if(m.matchType === 'okul'){
-          return !matches.some(x =>
+          return !allMatches.some(x =>
             x.matchType === 'okul' &&
             x.date === m.date &&
             x.time === m.time &&
@@ -2480,12 +2480,12 @@ async function autoSyncOnLoad(){
             x.venue.trim().toUpperCase() === m.venue.trim().toUpperCase()
           );
         }
-        return !matches.some(x => x.date === m.date && x.time === m.time);
+        return !allMatches.some(x => x.date === m.date && x.time === m.time);
       });
       allNew = allNew.concat(newOnes);
 
       // İptal tespiti: daha önce sana atanmış yaklaşan maçlar hâlâ Sheets'te var mı?
-      const myUpcoming = matches.filter(m => m.upcoming && m.matchType === type);
+      const myUpcoming = allMatches.filter(m => m.upcoming && m.matchType === type);
       for(const saved of myUpcoming){
         // Sheets'te bu maç hâlâ var mı ve hâlâ benim adım yazıyor mu?
         const stillAssigned = found.some(f => {
@@ -3188,7 +3188,7 @@ async function saveSingleSyncMatch(idx){
   const m = syncFoundMatches[idx];
   if(!m) return;
   try{
-    const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
+    const obj={season:activeSeason,date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
       homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
       role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
       rating:0,errors:[],comment:'',keymom:'',upcoming:true};
@@ -3207,7 +3207,7 @@ async function saveAllSyncMatches(){
   let saved=0;
   for(const m of [...syncFoundMatches]){
     try{
-      const obj={date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
+      const obj={season:activeSeason,date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
         homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
         role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
         rating:0,errors:[],comment:'',keymom:'',upcoming:true};
