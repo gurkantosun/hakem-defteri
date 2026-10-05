@@ -1200,11 +1200,8 @@ async function initApp(){
         try{ await window._FB.updateMatch(currentUser.uid, m.id, { season: '2025-2026' }); }catch(e){}
       }
     }
-    // Aktif sezonu settings'ten yükle
-    try{
-      const s = await window._FB.loadSettings(currentUser.uid);
-      if(s.activeSeason && SEASONS[s.activeSeason]) activeSeason = s.activeSeason;
-    }catch(e){}
+    // Aktif sezon: her zaman 2026-2027'den başla (güncel sezon)
+    activeSeason = '2026-2027';
     UCRET_OZEL = getSeasonCfg().ozelUcret;
     matches = allMatches.filter(m => (m.season || '2025-2026') === activeSeason);
     try{ goals = await window._FB.fetchGoals(currentUser.uid); } catch(e){ goals = JSON.parse(localStorage.getItem(goalsKey())||'[]'); }
@@ -1221,27 +1218,22 @@ async function initApp(){
   renderDashboard();renderMatches();renderCalendar();renderAnalysis();renderGoals();renderQuizHistory();
   updateHeaderStats();
   updateSeasonBtns();
-  // Bölge linkini Firebase'den çek, sonra otomatik tara
-  setTimeout(async ()=>{
-    try{
-      const settings = await window._FB.loadSettings(currentUser.uid);
-      if(settings.bolgeUrl) localStorage.setItem('hd_bolge_url', settings.bolgeUrl);
-      // Özel lig ücreti
-      if(settings.ozelUcret && !isNaN(settings.ozelUcret)){
-        UCRET_OZEL = parseFloat(settings.ozelUcret);
-        getSeasonCfg().ozelUcret = UCRET_OZEL;
-        const inp = document.getElementById('ozel-ucret-input');
-        if(inp) inp.value = UCRET_OZEL;
-      } else {
-        const inp = document.getElementById('ozel-ucret-input');
-        if(inp) inp.value = UCRET_OZEL;
-      }
-    }catch(e){
-      const inp = document.getElementById('ozel-ucret-input');
-      if(inp) inp.value = UCRET_OZEL;
+  // Bölge linkini Firebase'den çek, ayarları yükle, sonra tara
+  try{
+    const settings = await window._FB.loadSettings(currentUser.uid);
+    if(settings.bolgeUrl) localStorage.setItem('hd_bolge_url', settings.bolgeUrl);
+    if(settings.ozelUcret && !isNaN(settings.ozelUcret)){
+      UCRET_OZEL = parseFloat(settings.ozelUcret);
+      getSeasonCfg().ozelUcret = UCRET_OZEL;
     }
-    autoSyncOnLoad();
-  }, 1500);
+    const inp = document.getElementById('ozel-ucret-input');
+    if(inp) inp.value = UCRET_OZEL;
+  }catch(e){
+    const inp = document.getElementById('ozel-ucret-input');
+    if(inp) inp.value = UCRET_OZEL;
+  }
+  // allMatches tam yüklendi, şimdi tara
+  await autoSyncOnLoad();
 }
 
 async function autoMarkOverdueMatches(){
@@ -2168,11 +2160,14 @@ let syncCurrentType = '';
 function getUserNameUpper(){
   if(!currentUser) return '';
   const full = ((currentUser.firstName||'') + ' ' + (currentUser.lastName||'')).trim();
-  return full.toUpperCase()
-    .replace(/İ/g,'İ').replace(/I/g,'I')
-    .replace(/Ğ/g,'Ğ').replace(/Ü/g,'Ü')
-    .replace(/Ş/g,'Ş').replace(/Ö/g,'Ö')
-    .replace(/Ç/g,'Ç');
+  // Türkçe büyük harf: JS'de i→İ ama sheet'te I yazılmış olabilir
+  // Her ikisini de üret, parseRowsToMatches includes ile her ikisini de kontrol eder
+  return full
+    .replace(/i/g,'İ').replace(/ı/g,'I')
+    .replace(/ğ/g,'Ğ').replace(/ü/g,'Ü')
+    .replace(/ş/g,'Ş').replace(/ö/g,'Ö')
+    .replace(/ç/g,'Ç')
+    .toUpperCase();
 }
 
 function sheetIdFromUrl(url){
@@ -2233,7 +2228,14 @@ async function fetchSheetData(sheetId, gid){
 
 function parseRowsToMatches(rows, matchType, userName){
   const found = [];
+  // Türkçe karakter normalize: sheet'te I veya İ yazılmış olabilir
   const name = userName.toUpperCase();
+  const nameNorm = name.replace(/İ/g,'I');  // karşılaştırma için normalize
+  function matchesName(cell){
+    const c = String(cell||'').toUpperCase().trim();
+    const cNorm = c.replace(/İ/g,'I');
+    return c.includes(name) || c.includes(nameNorm) || cNorm.includes(name) || cNorm.includes(nameNorm);
+  }
   for(let i = 1; i < rows.length; i++){
     const row = rows[i];
     if(!row || row.length < 2) continue;
@@ -2245,7 +2247,7 @@ function parseRowsToMatches(rows, matchType, userName){
       if(row.length < 9) continue;
       h1 = String(row[7]||'').toUpperCase().trim();
       h2 = String(row[8]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
@@ -2265,7 +2267,7 @@ function parseRowsToMatches(rows, matchType, userName){
       if(row.length < 7) continue;
       h1 = String(row[5]||'').toUpperCase().trim();
       h2 = String(row[6]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[1]||'').trim();
@@ -2284,7 +2286,7 @@ function parseRowsToMatches(rows, matchType, userName){
       if(row.length < 9) continue;
       h1 = String(row[7]||'').toUpperCase().trim();
       h2 = String(row[8]||'').toUpperCase().trim();
-      if(h1 !== name && h2 !== name) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       if(!isFutureDate(dateStr)) continue;
       time     = String(row[2]||'').trim();
@@ -2383,9 +2385,9 @@ async function runSyncType(type){
     // Daha önce kaydedilmemiş yenileri filtrele
     const newOnes = found.filter(m => {
       if(m.matchType === 'okul'){
-        return !matches.some(x => x.date===m.date && x.time===m.time && x.venue===m.venue && x.matchType==='okul');
+        return !allMatches.some(x => x.date===m.date && x.time===m.time && x.venue===m.venue && x.matchType==='okul');
       }
-      return !matches.some(x => x.date===m.date && x.homeTeam===m.homeTeam && x.awayTeam===m.awayTeam && x.time===m.time);
+      return !allMatches.some(x => x.date===m.date && x.time===m.time);
     });
 
     if(statusEl) statusEl.textContent = newOnes.length
@@ -2446,10 +2448,9 @@ async function autoSyncOnLoad(){
       // Firebase'den önceki tarama verisini al (cihazlar arası senkron)
       let prevData = {totalRows:0, filledRefs:0};
       try{
-        const settings = await window._FB.loadSettings(currentUser.uid);
-        if(settings[storeKey]) prevData = JSON.parse(settings[storeKey]);
-        else { const local = localStorage.getItem(storeKey); if(local) prevData = JSON.parse(local); }
-      }catch(e){ const local = localStorage.getItem(storeKey); if(local) prevData = JSON.parse(local); }
+        const local = localStorage.getItem(storeKey);
+        if(local) prevData = JSON.parse(local);
+      }catch(e){}
       const totalRows = rows.length - 1;
 
       // Dolu hakem hücre sayısını hesapla (boş yerler doldu mu?)
@@ -2523,7 +2524,7 @@ async function autoSyncOnLoad(){
       const statusKey = type === 'bolge' ? 'bolge' : type === 'ozellig' ? 'ozel' : 'okul';
       const statusEl = document.getElementById('sync-' + statusKey + '-status');
       if(statusEl) statusEl.textContent = newOnes.length
-        ? '🔔 ' + newOnes.length + ' yeni atama var!'
+        ? '🔔 ' + newOnes.length + ' yeni atama bulundu!'
         : (programChanged ? '📋 Program güncellendi, sana atama yok.' : 'Değişiklik yok.');
 
     }catch(e){
@@ -3241,14 +3242,14 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
       if(row.length < 9) continue;
       h1 = String(row[7]||'').toUpperCase().trim();
       h2 = String(row[8]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       time     = String(row[2]||'').trim();
       homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
       category = [String(row[5]||'').trim(), String(row[6]||'').trim()].filter(Boolean).join(' — ');
       venue    = String(row[1]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      role     = matchesName(h1) ? '1. Hakem' : 'Yardımcı Hakem';
       partner  = toTitleCase(h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim());
       const g  = String(row[12]||'').trim();
       observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
@@ -3257,14 +3258,14 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
       if(row.length < 7) continue;
       h1 = String(row[5]||'').toUpperCase().trim();
       h2 = String(row[6]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       time     = String(row[1]||'').trim();
       homeTeam = String(row[3]||'').trim().toUpperCase();
       category = String(row[4]||'').trim().toUpperCase();
       awayTeam = '';
       venue    = String(row[2]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      role     = matchesName(h1) ? '1. Hakem' : 'Yardımcı Hakem';
       partner  = toTitleCase(h1.includes(name) ? String(row[6]||'').trim() : String(row[5]||'').trim());
       observer = 'Yok'; // Okul maçlarında gözlemci sütunu yok
 
@@ -3272,14 +3273,14 @@ function parseRowsToMatchesAll(rows, matchType, userName, pastOnly=false){
       if(row.length < 9) continue;
       h1 = String(row[7]||'').toUpperCase().trim();
       h2 = String(row[8]||'').toUpperCase().trim();
-      if(!h1.includes(name) && !h2.includes(name)) continue;
+      if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
       time     = String(row[2]||'').trim();
       homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
       category = mapCategory(String(row[5]||'').trim());
       venue    = String(row[1]||'').trim();
-      role     = h1.includes(name) ? '1. Hakem' : 'Yardımcı Hakem';
+      role     = matchesName(h1) ? '1. Hakem' : 'Yardımcı Hakem';
       partner  = toTitleCase(h1.includes(name) ? String(row[8]||'').trim() : String(row[7]||'').trim());
       const g  = String(row[12]||'').trim();
       observer = g ? 'Var — ' + toTitleCase(g) : 'Yok';
