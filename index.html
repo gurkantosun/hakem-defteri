@@ -1238,8 +1238,8 @@ async function initApp(){
 
 async function autoMarkOverdueMatches(){
   const today = todayStr();
-  // upcoming:true ama tarihi geçmiş (bugün dahil saat geçtiyse) → upcoming:false yap
-  const overdue = matches.filter(m => m.upcoming === true && m.date < today);
+  // upcoming:true ama tarihi geçmiş veya bugün olan → upcoming:false yap
+  const overdue = matches.filter(m => m.upcoming === true && m.date <= today);
   for(const m of overdue){
     try{
       await window._FB.updateMatch(currentUser.uid, m.id, {...m, upcoming:false});
@@ -1253,8 +1253,8 @@ async function autoMarkOverdueMatches(){
 
 
 const todayStr=()=>new Date().toISOString().slice(0,10);
-const isFuture=m=>m.upcoming===true&&m.date>=todayStr();
-const isOverdue=m=>m.upcoming===true&&m.date<todayStr();
+const isFuture=m=>m.upcoming===true&&m.date>todayStr();
+const isOverdue=m=>m.upcoming===true&&m.date<=todayStr();
 const isPast=m=>!m.upcoming;
 
 // Sıralama: tarih (yıl-ay-gün) + saat birlikte, en yeni en üstte
@@ -2211,7 +2211,7 @@ function isFutureDate(dateStr){
   if(!dateStr) return false;
   const today = new Date(); today.setHours(0,0,0,0);
   const d = new Date(dateStr);
-  return d >= today;
+  return d > today; // bugünün maçı oynandı sayılır (upcoming:false)
 }
 
 async function fetchSheetData(sheetId, gid){
@@ -2249,7 +2249,7 @@ function parseRowsToMatches(rows, matchType, userName){
       h2 = String(row[8]||'').toUpperCase().trim();
       if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!isFutureDate(dateStr)) continue;
+      if(!dateStr) continue;
       time     = String(row[2]||'').trim();
       homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
@@ -2269,7 +2269,7 @@ function parseRowsToMatches(rows, matchType, userName){
       h2 = String(row[6]||'').toUpperCase().trim();
       if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!isFutureDate(dateStr)) continue;
+      if(!dateStr) continue;
       time     = String(row[1]||'').trim();
       awayTeam = '';
       homeTeam = String(row[3]||'').trim().toUpperCase();
@@ -2288,7 +2288,7 @@ function parseRowsToMatches(rows, matchType, userName){
       h2 = String(row[8]||'').toUpperCase().trim();
       if(!matchesName(h1) && !matchesName(h2)) continue;
       dateStr  = parseTurkishDate(String(row[0]||''));
-      if(!isFutureDate(dateStr)) continue;
+      if(!dateStr) continue;
       time     = String(row[2]||'').trim();
       homeTeam = String(row[3]||'').trim();
       awayTeam = String(row[4]||'').trim();
@@ -3189,10 +3189,11 @@ async function saveSingleSyncMatch(idx){
   const m = syncFoundMatches[idx];
   if(!m) return;
   try{
+    const isUpcoming = isFutureDate(m.date);
     const obj={season:activeSeason,date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
       homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
       role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
-      rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+      rating:0,errors:[],comment:'',keymom:'',upcoming:isUpcoming};
     const newId=await window._FB.addMatch(currentUser.uid,obj);
     matches.unshift({id:newId,...obj});
     allMatches.unshift({id:newId,...obj});
@@ -3208,10 +3209,11 @@ async function saveAllSyncMatches(){
   let saved=0;
   for(const m of [...syncFoundMatches]){
     try{
+      const isUpcoming = isFutureDate(m.date);
       const obj={season:activeSeason,date:m.date,time:m.time,matchType:m.matchType,category:m.category,name:m.name,
         homeTeam:m.homeTeam||'',awayTeam:m.awayTeam||'',league:'',score:'',venue:m.venue||'',
         role:m.role||'',partners:m.partner||'',observer:m.observer||'Yok',
-        rating:0,errors:[],comment:'',keymom:'',upcoming:true};
+        rating:0,errors:[],comment:'',keymom:'',upcoming:isUpcoming};
       const newId=await window._FB.addMatch(currentUser.uid,obj);
       matches.unshift({id:newId,...obj}); allMatches.unshift({id:newId,...obj}); saved++;
     }catch(e){console.error(e);}
